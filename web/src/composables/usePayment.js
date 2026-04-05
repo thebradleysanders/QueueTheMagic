@@ -21,6 +21,9 @@ export function usePayment() {
   const loading = ref(false)
   const error = ref(null)
 
+  let _stripe = null
+  let _elements = null
+
   async function createIntent(type, songId, amount = null) {
     const { data } = await axios.post('/api/payment/create-intent', {
       type,
@@ -31,10 +34,16 @@ export function usePayment() {
     return data.clientSecret
   }
 
-  async function confirmPayment(clientSecret, returnUrl) {
-    const stripe = await getStripe()
-    const result = await stripe.confirmPayment({
-      clientSecret,
+  async function mountPaymentElement(clientSecret, domElement) {
+    _stripe = await getStripe()
+    _elements = _stripe.elements({ clientSecret })
+    const el = _elements.create('payment')
+    el.mount(domElement)
+  }
+
+  async function confirmPayment(returnUrl) {
+    const result = await _stripe.confirmPayment({
+      elements: _elements,
       confirmParams: { return_url: returnUrl },
       redirect: 'if_required',
     })
@@ -42,5 +51,5 @@ export function usePayment() {
     return result.paymentIntent?.id
   }
 
-  return { loading, error, createIntent, confirmPayment }
+  return { loading, error, createIntent, mountPaymentElement, confirmPayment }
 }

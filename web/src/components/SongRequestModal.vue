@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, nextTick } from 'vue'
 import axios from 'axios'
 import { useShowStore } from '@/stores/show'
 import { useSessionStore } from '@/stores/session'
@@ -9,7 +9,7 @@ import MarqueeText from '@/components/MarqueeText.vue'
 const emit = defineEmits(['close'])
 const showStore = useShowStore()
 const sessionStore = useSessionStore()
-const { createIntent, confirmPayment } = usePayment()
+const { createIntent, mountPaymentElement, confirmPayment } = usePayment()
 const isDark = computed(() => showStore.config.theme !== 'light')
 
 const playlists = ref([])
@@ -18,6 +18,7 @@ const selectedSong = ref(null)
 const step = ref('select')
 const errorMsg = ref(null)
 const loading = ref(false)
+const paymentElementRef = ref(null)
 
 onMounted(async () => {
   const { data } = await axios.get('/api/songs')
@@ -41,14 +42,33 @@ async function pay() {
   loading.value = true
   errorMsg.value = null
   try {
-    let paymentIntentId
     if (isDev) {
-      paymentIntentId = 'dev_test'
-    } else {
-      const clientSecret = await createIntent('song', selectedSong.value.id)
-      step.value = 'paying'
-      paymentIntentId = await confirmPayment(clientSecret, window.location.href)
+      await axios.post('/api/queue', {
+        songId: selectedSong.value.id,
+        paymentIntentId: 'dev_test',
+        sessionToken: sessionStore.sessionToken,
+      })
+      await showStore.fetchQueue()
+      step.value = 'done'
+      return
     }
+    const clientSecret = await createIntent('song', selectedSong.value.id)
+    step.value = 'payment'
+    await nextTick()
+    await mountPaymentElement(clientSecret, paymentElementRef.value)
+  } catch (e) {
+    errorMsg.value = e.response?.data?.error || e.message || 'Something went wrong.'
+    step.value = 'select'
+  } finally {
+    loading.value = false
+  }
+}
+
+async function submitPayment() {
+  loading.value = true
+  errorMsg.value = null
+  try {
+    const paymentIntentId = await confirmPayment(window.location.href)
     await axios.post('/api/queue', {
       songId: selectedSong.value.id,
       paymentIntentId,
@@ -58,7 +78,6 @@ async function pay() {
     step.value = 'done'
   } catch (e) {
     errorMsg.value = e.response?.data?.error || e.message || 'Something went wrong.'
-    step.value = 'select'
   } finally {
     loading.value = false
   }
@@ -128,6 +147,20 @@ async function pay() {
             <p v-if="song.artist" class="text-xs text-hint mt-0.5 ml-6 truncate">{{ song.artist }}</p>
           </button>
         </div>
+      </div>
+
+      <!-- Step: payment form -->
+      <div v-if="step === 'payment'" class="p-5">
+        <div v-if="errorMsg" class="mb-3 p-3 bg-red-500/20 text-red-400 rounded-xl text-sm">{{ errorMsg }}</div>
+        <div ref="paymentElementRef"></div>
+        <button
+          @click="submitPayment"
+          :disabled="loading"
+          class="w-full mt-4 py-4 font-bold text-base text-white rounded-2xl transition active:scale-95 disabled:opacity-40"
+          style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%)"
+        >
+          {{ loading ? '⏳ Processing...' : `🎵 Pay $${showStore.config.songRequestCost}` }}
+        </button>
       </div>
 
       <!-- Step: paying -->

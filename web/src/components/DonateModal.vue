@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import axios from 'axios'
 import { useShowStore } from '@/stores/show'
 import { useSessionStore } from '@/stores/session'
@@ -8,7 +8,7 @@ import { usePayment } from '@/composables/usePayment'
 const emit = defineEmits(['close'])
 const showStore = useShowStore()
 const sessionStore = useSessionStore()
-const { createIntent, confirmPayment } = usePayment()
+const { createIntent, mountPaymentElement, confirmPayment } = usePayment()
 
 const isDev = import.meta.env.DEV
 const min = computed(() => Number(showStore.config.donateCost) || 1)
@@ -22,6 +22,7 @@ const customAmount = ref('')
 const step = ref('select')
 const errorMsg = ref(null)
 const loading = ref(false)
+const paymentElementRef = ref(null)
 
 const amount = computed(() => {
   if (selectedAmount.value !== null) return selectedAmount.value
@@ -45,14 +46,32 @@ async function donate() {
   loading.value = true
   errorMsg.value = null
   try {
-    let paymentIntentId
     if (isDev) {
-      paymentIntentId = 'dev_test'
-    } else {
-      const clientSecret = await createIntent('donate', null, amount.value)
-      step.value = 'paying'
-      paymentIntentId = await confirmPayment(clientSecret, window.location.href)
+      await axios.post('/api/payment/donate', {
+        paymentIntentId: 'dev_test',
+        sessionToken: sessionStore.sessionToken,
+        amount: amount.value,
+      })
+      step.value = 'done'
+      return
     }
+    const clientSecret = await createIntent('donate', null, amount.value)
+    step.value = 'payment'
+    await nextTick()
+    await mountPaymentElement(clientSecret, paymentElementRef.value)
+  } catch (e) {
+    errorMsg.value = e.response?.data?.error || e.message || 'Something went wrong.'
+    step.value = 'select'
+  } finally {
+    loading.value = false
+  }
+}
+
+async function submitPayment() {
+  loading.value = true
+  errorMsg.value = null
+  try {
+    const paymentIntentId = await confirmPayment(window.location.href)
     await axios.post('/api/payment/donate', {
       paymentIntentId,
       sessionToken: sessionStore.sessionToken,
@@ -61,7 +80,6 @@ async function donate() {
     step.value = 'done'
   } catch (e) {
     errorMsg.value = e.response?.data?.error || e.message || 'Something went wrong.'
-    step.value = 'select'
   } finally {
     loading.value = false
   }
@@ -115,6 +133,18 @@ async function donate() {
           class="w-full py-3 bg-green-600 hover:bg-green-500 disabled:opacity-40 text-white font-semibold rounded-xl transition"
         >
           {{ loading ? 'Processing...' : isDev ? `⚡ Donate $${amount ?? '—'} (dev)` : `Donate $${amount?.toFixed(2) ?? '—'}` }}
+        </button>
+      </div>
+
+      <div v-if="step === 'payment'" class="p-5">
+        <div v-if="errorMsg" class="mb-3 p-3 bg-red-500/20 text-red-400 rounded-lg text-sm">{{ errorMsg }}</div>
+        <div ref="paymentElementRef"></div>
+        <button
+          @click="submitPayment"
+          :disabled="loading"
+          class="w-full mt-4 py-3 bg-green-600 hover:bg-green-500 disabled:opacity-40 text-white font-semibold rounded-xl transition"
+        >
+          {{ loading ? 'Processing...' : `Donate $${amount?.toFixed(2)}` }}
         </button>
       </div>
 
