@@ -34,8 +34,8 @@ jobs:
           file: docker/Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/queuethemagic:${{ steps.version.outputs.VERSION }}
-            ${{ secrets.DOCKERHUB_USERNAME }}/queuethemagic:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/queue-the-magic:${{ steps.version.outputs.VERSION }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/queue-the-magic:latest
           build-args: |
             VERSION=${{ steps.version.outputs.VERSION }}
           cache-from: type=gha
