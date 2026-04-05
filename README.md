@@ -48,8 +48,6 @@ services:
       - AdminPassword=your-secure-password
       - Jwt__Secret=change-this-to-a-long-random-string-min-32-chars
       - AllowedOrigins=http://your-server-ip
-      - APP_PORT=80
-      - API_PORT=5288
     volumes:
       - qtm-data:/app/data
     restart: unless-stopped
@@ -105,8 +103,6 @@ All configuration is passed via environment variables — no config files to edi
 | `AdminPassword` | — | Password for `/admin` login |
 | `Jwt__Secret` | — | Token signing secret — min 32 characters, keep private |
 | `AllowedOrigins` | `http://localhost` | CORS origin — your domain or IP |
-| `APP_PORT` | `80` | Port the web UI is served on (host and container) |
-| `API_PORT` | `5288` | Internal API port — nginx proxies to this |
 
 > FPP address and all other show settings are configured via the admin dashboard and stored in the database.
 
