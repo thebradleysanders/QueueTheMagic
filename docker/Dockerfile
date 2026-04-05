@@ -6,9 +6,9 @@ ARG VERSION
 RUN apk add --no-cache curl \
  && mkdir /src \
  && if echo "$VERSION" | grep -qE '^v[0-9]'; then \
-      URL="https://github.com/thebradleysanders/XlightsQueue/archive/refs/tags/${VERSION}.tar.gz"; \
+      URL="https://github.com/thebradleysanders/QueueTheMagic/archive/refs/tags/${VERSION}.tar.gz"; \
     else \
-      URL="https://github.com/thebradleysanders/XlightsQueue/archive/refs/heads/${VERSION}.tar.gz"; \
+      URL="https://github.com/thebradleysanders/QueueTheMagic/archive/refs/heads/${VERSION}.tar.gz"; \
     fi \
  && curl -fsSL "$URL" | tar -xz --strip-components=1 -C /src
 
