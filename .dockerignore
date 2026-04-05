@@ -1,0 +1,21 @@
+# .NET
+api/bin/
+api/obj/
+api/.vs/
+api/*.user
+api/*.suo
+
+# Node
+web/node_modules/
+web/dist/
+
+# Git & docs
+.git/
+.gitignore
+**/*.md
+
+# Env files (secrets should come from environment variables)
+.env*
+
+# Docker files (not needed inside image)
+docker/

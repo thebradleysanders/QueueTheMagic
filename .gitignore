@@ -1,0 +1,21 @@
+# ── .NET ─────────────────────────────────────────────
+api/bin/
+api/obj/
+api/*.user
+api/*.db
+api/*.db-shm
+api/*.db-wal
+api/.vs/
+
+# ── Node ─────────────────────────────────────────────
+web/node_modules/
+web/dist/
+
+# ── Environment / secrets ─────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ── OS ───────────────────────────────────────────────
+.DS_Store
+Thumbs.db

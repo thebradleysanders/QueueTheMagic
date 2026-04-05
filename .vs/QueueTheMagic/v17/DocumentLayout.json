@@ -1,0 +1,453 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|c:\\users\\brad\\downloads\\queuethemagic\\api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|solutionrelative:api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|c:\\users\\brad\\downloads\\queuethemagic\\api\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|solutionrelative:api\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|c:\\users\\brad\\downloads\\queuethemagic\\api\\services\\schedulehelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|solutionrelative:api\\services\\schedulehelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|c:\\users\\brad\\downloads\\queuethemagic\\api\\services\\queueservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|solutionrelative:api\\services\\queueservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|c:\\users\\brad\\downloads\\queuethemagic\\api\\services\\queuemanagerservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|solutionrelative:api\\services\\queuemanagerservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|c:\\users\\brad\\downloads\\queuethemagic\\api\\services\\paymentservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|solutionrelative:api\\services\\paymentservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|c:\\users\\brad\\downloads\\queuethemagic\\api\\services\\mqttservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|solutionrelative:api\\services\\mqttservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|c:\\users\\brad\\downloads\\queuethemagic\\api\\services\\iqueuetrigger.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|solutionrelative:api\\services\\iqueuetrigger.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|c:\\users\\brad\\downloads\\queuethemagic\\api\\services\\fppservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|solutionrelative:api\\services\\fppservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|c:\\users\\brad\\downloads\\queuethemagic\\api\\services\\adminauthservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|solutionrelative:api\\services\\adminauthservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|c:\\users\\brad\\downloads\\queuethemagic\\api\\models\\usersession.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|solutionrelative:api\\models\\usersession.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|c:\\users\\brad\\downloads\\queuethemagic\\api\\models\\thankyou.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|solutionrelative:api\\models\\thankyou.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|c:\\users\\brad\\downloads\\queuethemagic\\api\\models\\songrating.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|solutionrelative:api\\models\\songrating.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|c:\\users\\brad\\downloads\\queuethemagic\\api\\models\\song.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|solutionrelative:api\\models\\song.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|c:\\users\\brad\\downloads\\queuethemagic\\api\\models\\showconfig.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|solutionrelative:api\\models\\showconfig.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|c:\\users\\brad\\downloads\\queuethemagic\\api\\models\\queueitem.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|solutionrelative:api\\models\\queueitem.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|c:\\users\\brad\\downloads\\queuethemagic\\api\\models\\playlist.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|solutionrelative:api\\models\\playlist.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|c:\\users\\brad\\downloads\\queuethemagic\\api\\models\\donation.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|solutionrelative:api\\models\\donation.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|c:\\users\\brad\\downloads\\queuethemagic\\api\\hubs\\showhub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|solutionrelative:api\\hubs\\showhub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|c:\\users\\brad\\downloads\\queuethemagic\\api\\dtos\\queuedtos.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|solutionrelative:api\\dtos\\queuedtos.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|c:\\users\\brad\\downloads\\queuethemagic\\api\\data\\appdbcontextfactory.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|solutionrelative:api\\data\\appdbcontextfactory.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|c:\\users\\brad\\downloads\\queuethemagic\\api\\data\\appdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|solutionrelative:api\\data\\appdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|c:\\users\\brad\\downloads\\queuethemagic\\api\\controllers\\songscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|solutionrelative:api\\controllers\\songscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|c:\\users\\brad\\downloads\\queuethemagic\\api\\controllers\\showcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|solutionrelative:api\\controllers\\showcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|c:\\users\\brad\\downloads\\queuethemagic\\api\\controllers\\queuecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|solutionrelative:api\\controllers\\queuecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|c:\\users\\brad\\downloads\\queuethemagic\\api\\controllers\\paymentcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|solutionrelative:api\\controllers\\paymentcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|c:\\users\\brad\\downloads\\queuethemagic\\api\\controllers\\admincontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|solutionrelative:api\\controllers\\admincontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\appsettings.json",
+              "RelativeDocumentMoniker": "api\\appsettings.json",
+              "ToolTip": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\appsettings.json",
+              "RelativeToolTip": "api\\appsettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-04-05T02:31:03.326Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Program.cs",
+              "RelativeDocumentMoniker": "api\\Program.cs",
+              "ToolTip": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Program.cs",
+              "RelativeToolTip": "api\\Program.cs",
+              "ViewState": "AgIAAAYAAAAAAAAAAAAAACQAAABoAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-05T02:02:28.092Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "ScheduleHelper.cs",
+              "DocumentMoniker": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Services\\ScheduleHelper.cs",
+              "RelativeDocumentMoniker": "api\\Services\\ScheduleHelper.cs",
+              "ToolTip": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Services\\ScheduleHelper.cs",
+              "RelativeToolTip": "api\\Services\\ScheduleHelper.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-05T02:02:18.275Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "QueueService.cs",
+              "DocumentMoniker": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Services\\QueueService.cs",
+              "RelativeDocumentMoniker": "api\\Services\\QueueService.cs",
+              "ToolTip": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Services\\QueueService.cs",
+              "RelativeToolTip": "api\\Services\\QueueService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-05T02:02:13.347Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "PaymentService.cs",
+              "DocumentMoniker": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Services\\PaymentService.cs",
+              "RelativeDocumentMoniker": "api\\Services\\PaymentService.cs",
+              "ToolTip": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Services\\PaymentService.cs",
+              "RelativeToolTip": "api\\Services\\PaymentService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-05T02:01:50.76Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "MqttService.cs",
+              "DocumentMoniker": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Services\\MqttService.cs",
+              "RelativeDocumentMoniker": "api\\Services\\MqttService.cs",
+              "ToolTip": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Services\\MqttService.cs",
+              "RelativeToolTip": "api\\Services\\MqttService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-05T02:01:40.378Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "IQueueTrigger.cs",
+              "DocumentMoniker": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Services\\IQueueTrigger.cs",
+              "RelativeDocumentMoniker": "api\\Services\\IQueueTrigger.cs",
+              "ToolTip": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Services\\IQueueTrigger.cs",
+              "RelativeToolTip": "api\\Services\\IQueueTrigger.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-05T02:01:31.403Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "FppService.cs",
+              "DocumentMoniker": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Services\\FppService.cs",
+              "RelativeDocumentMoniker": "api\\Services\\FppService.cs",
+              "ToolTip": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Services\\FppService.cs",
+              "RelativeToolTip": "api\\Services\\FppService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-05T02:01:26.744Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "AdminAuthService.cs",
+              "DocumentMoniker": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Services\\AdminAuthService.cs",
+              "RelativeDocumentMoniker": "api\\Services\\AdminAuthService.cs",
+              "ToolTip": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Services\\AdminAuthService.cs",
+              "RelativeToolTip": "api\\Services\\AdminAuthService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-05T02:01:22.299Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "UserSession.cs",
+              "DocumentMoniker": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Models\\UserSession.cs",
+              "RelativeDocumentMoniker": "api\\Models\\UserSession.cs",
+              "ToolTip": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Models\\UserSession.cs",
+              "RelativeToolTip": "api\\Models\\UserSession.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-05T02:01:15.411Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "ThankYou.cs",
+              "DocumentMoniker": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Models\\ThankYou.cs",
+              "RelativeDocumentMoniker": "api\\Models\\ThankYou.cs",
+              "ToolTip": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Models\\ThankYou.cs",
+              "RelativeToolTip": "api\\Models\\ThankYou.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-05T02:01:11.575Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "QueueManagerService.cs",
+              "DocumentMoniker": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Services\\QueueManagerService.cs",
+              "RelativeDocumentMoniker": "api\\Services\\QueueManagerService.cs",
+              "ToolTip": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Services\\QueueManagerService.cs",
+              "RelativeToolTip": "api\\Services\\QueueManagerService.cs",
+              "ViewState": "AgIAANIAAAAAAAAAAAAnwN8AAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-05T01:57:09.15Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "SongRating.cs",
+              "DocumentMoniker": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Models\\SongRating.cs",
+              "RelativeDocumentMoniker": "api\\Models\\SongRating.cs",
+              "ToolTip": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Models\\SongRating.cs",
+              "RelativeToolTip": "api\\Models\\SongRating.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-05T02:01:07.569Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 13,
+              "Title": "Song.cs",
+              "DocumentMoniker": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Models\\Song.cs",
+              "RelativeDocumentMoniker": "api\\Models\\Song.cs",
+              "ToolTip": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Models\\Song.cs",
+              "RelativeToolTip": "api\\Models\\Song.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-05T02:01:03.51Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 14,
+              "Title": "ShowConfig.cs",
+              "DocumentMoniker": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Models\\ShowConfig.cs",
+              "RelativeDocumentMoniker": "api\\Models\\ShowConfig.cs",
+              "ToolTip": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Models\\ShowConfig.cs",
+              "RelativeToolTip": "api\\Models\\ShowConfig.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-05T02:00:59.177Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 15,
+              "Title": "QueueItem.cs",
+              "DocumentMoniker": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Models\\QueueItem.cs",
+              "RelativeDocumentMoniker": "api\\Models\\QueueItem.cs",
+              "ToolTip": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Models\\QueueItem.cs",
+              "RelativeToolTip": "api\\Models\\QueueItem.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-05T02:00:55.445Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 16,
+              "Title": "Playlist.cs",
+              "DocumentMoniker": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Models\\Playlist.cs",
+              "RelativeDocumentMoniker": "api\\Models\\Playlist.cs",
+              "ToolTip": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Models\\Playlist.cs",
+              "RelativeToolTip": "api\\Models\\Playlist.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-05T02:00:52.184Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 17,
+              "Title": "Donation.cs",
+              "DocumentMoniker": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Models\\Donation.cs",
+              "RelativeDocumentMoniker": "api\\Models\\Donation.cs",
+              "ToolTip": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Models\\Donation.cs",
+              "RelativeToolTip": "api\\Models\\Donation.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-05T02:00:47.999Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 18,
+              "Title": "ShowHub.cs",
+              "DocumentMoniker": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Hubs\\ShowHub.cs",
+              "RelativeDocumentMoniker": "api\\Hubs\\ShowHub.cs",
+              "ToolTip": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Hubs\\ShowHub.cs",
+              "RelativeToolTip": "api\\Hubs\\ShowHub.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-05T02:00:09.896Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 19,
+              "Title": "QueueDtos.cs",
+              "DocumentMoniker": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\DTOs\\QueueDtos.cs",
+              "RelativeDocumentMoniker": "api\\DTOs\\QueueDtos.cs",
+              "ToolTip": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\DTOs\\QueueDtos.cs",
+              "RelativeToolTip": "api\\DTOs\\QueueDtos.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-05T01:59:57.065Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 20,
+              "Title": "AppDbContextFactory.cs",
+              "DocumentMoniker": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Data\\AppDbContextFactory.cs",
+              "RelativeDocumentMoniker": "api\\Data\\AppDbContextFactory.cs",
+              "ToolTip": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Data\\AppDbContextFactory.cs",
+              "RelativeToolTip": "api\\Data\\AppDbContextFactory.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-05T01:59:48.6Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 21,
+              "Title": "AppDbContext.cs",
+              "DocumentMoniker": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Data\\AppDbContext.cs",
+              "RelativeDocumentMoniker": "api\\Data\\AppDbContext.cs",
+              "ToolTip": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Data\\AppDbContext.cs",
+              "RelativeToolTip": "api\\Data\\AppDbContext.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-05T01:59:44.496Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 22,
+              "Title": "SongsController.cs",
+              "DocumentMoniker": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Controllers\\SongsController.cs",
+              "RelativeDocumentMoniker": "api\\Controllers\\SongsController.cs",
+              "ToolTip": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Controllers\\SongsController.cs",
+              "RelativeToolTip": "api\\Controllers\\SongsController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-05T01:59:37.977Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 23,
+              "Title": "ShowController.cs",
+              "DocumentMoniker": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Controllers\\ShowController.cs",
+              "RelativeDocumentMoniker": "api\\Controllers\\ShowController.cs",
+              "ToolTip": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Controllers\\ShowController.cs",
+              "RelativeToolTip": "api\\Controllers\\ShowController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-05T01:59:34.033Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 24,
+              "Title": "QueueController.cs",
+              "DocumentMoniker": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Controllers\\QueueController.cs",
+              "RelativeDocumentMoniker": "api\\Controllers\\QueueController.cs",
+              "ToolTip": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Controllers\\QueueController.cs",
+              "RelativeToolTip": "api\\Controllers\\QueueController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-05T01:59:29.836Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 25,
+              "Title": "PaymentController.cs",
+              "DocumentMoniker": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Controllers\\PaymentController.cs",
+              "RelativeDocumentMoniker": "api\\Controllers\\PaymentController.cs",
+              "ToolTip": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Controllers\\PaymentController.cs",
+              "RelativeToolTip": "api\\Controllers\\PaymentController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-05T01:59:21.292Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 26,
+              "Title": "AdminController.cs",
+              "DocumentMoniker": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Controllers\\AdminController.cs",
+              "RelativeDocumentMoniker": "api\\Controllers\\AdminController.cs",
+              "ToolTip": "C:\\Users\\Brad\\Downloads\\QueueTheMagic\\api\\Controllers\\AdminController.cs",
+              "RelativeToolTip": "api\\Controllers\\AdminController.cs",
+              "ViewState": "AgIAAEkBAAAAAAAAAAAuwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-05T01:56:09.572Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
