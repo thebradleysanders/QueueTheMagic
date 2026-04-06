@@ -169,7 +169,7 @@ namespace XlightsQueue.Migrations
             migrationBuilder.InsertData(
                 table: "ShowConfigs",
                 columns: new[] { "Id", "AutoPlayDefault", "BumpCost", "DefaultPlaylistName", "DefaultTheme", "FmRadioStation", "FppAddress", "FppPollingIntervalSeconds", "HoursEnd", "HoursStart", "InterruptForUserSongs", "MaxSongsPerWindow", "MqttBrokerHost", "MqttBrokerPort", "MqttEnabled", "MqttPassword", "MqttTopicPrefix", "MqttUsername", "RateLimitWindowMinutes", "SiteName", "SocialMediaJson", "SongRequestCost" },
-                values: new object[] { 1, true, 1.00m, "", "dark", "", "192.168.1.100", 5, null, null, true, 3, "", 1883, false, "", "xlights", "", 60, "Holiday Light Show", "[]", 1.00m });
+                values: new object[] { 1, true, 1.00m, "", "dark", "", "192.168.1.100", 5, null, null, true, 3, "", 1883, false, "", "xlights", "", 60, "Queue The Magic", "[]", 1.00m });
 
             migrationBuilder.CreateIndex(
                 name: "IX_QueueItems_DonationId",

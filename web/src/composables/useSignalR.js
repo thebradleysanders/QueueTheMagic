@@ -1,48 +1,47 @@
-import { onMounted, onUnmounted } from 'vue'
-import * as signalR from '@microsoft/signalr'
-import { useShowStore } from '@/stores/show'
+import * as signalR from '@microsoft/signalr';
 
-let connection = null
+import { onMounted, onUnmounted } from 'vue';
+
+import { useShowStore } from '@/stores/show';
+
+let connection = null;
 
 export function useSignalR() {
-  const showStore = useShowStore()
+    const showStore = useShowStore();
 
-  function connect() {
-    if (connection) return
+    function connect() {
+        if (connection) return;
 
-    connection = new signalR.HubConnectionBuilder()
-      .withUrl('/showHub')
-      .withAutomaticReconnect()
-      .build()
+        connection = new signalR.HubConnectionBuilder().withUrl('/showHub').withAutomaticReconnect().build();
 
-    connection.on('QueueUpdated', (queue) => {
-      showStore.queue = queue
-    })
+        connection.on('QueueUpdated', queue => {
+            showStore.queue = queue;
+        });
 
-    connection.on('NowPlayingChanged', (nowPlaying) => {
-      showStore.setNowPlaying(nowPlaying)
-    })
+        connection.on('NowPlayingChanged', nowPlaying => {
+            showStore.setNowPlaying(nowPlaying);
+        });
 
-    connection.on('ShowConfigUpdated', (config) => {
-      showStore.config = config
-    })
+        connection.on('ShowConfigUpdated', config => {
+            showStore.config = config;
+        });
 
-    connection.on('QueueItemAdded', (item) => {
-      // QueueUpdated broadcast handles this; here as fallback
-    })
+        connection.on('QueueItemAdded', item => {
+            // QueueUpdated broadcast handles this; here as fallback
+        });
 
-    connection.start().catch(err => console.error('SignalR error:', err))
-  }
+        connection.start().catch(err => console.error('SignalR error:', err));
+    }
 
-  function disconnect() {
-    connection?.stop()
-    connection = null
-  }
+    function disconnect() {
+        connection?.stop();
+        connection = null;
+    }
 
-  onMounted(connect)
-  onUnmounted(() => {
-    // Keep connection alive across component remounts
-  })
+    onMounted(connect);
+    onUnmounted(() => {
+        // Keep connection alive across component remounts
+    });
 
-  return { connect, disconnect }
+    return { connect, disconnect };
 }

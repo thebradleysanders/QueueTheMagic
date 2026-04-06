@@ -1,10 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.0.31903.59
+# Visual Studio Version 18
+VisualStudioVersion = 18.4.11605.240 stable
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "api", "api", "{D82C56D6-B2CD-F611-9E31-04638F7EC30E}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QueueTheMagic", "api\QueueTheMagic.csproj", "{7C5666C1-E697-9333-FD19-A3B49721132B}"
 EndProject
 Global
@@ -21,7 +19,7 @@ Global
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{7C5666C1-E697-9333-FD19-A3B49721132B} = {D82C56D6-B2CD-F611-9E31-04638F7EC30E}
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6EADC21E-345D-4AEF-8FFA-D47AE5390441}
 	EndGlobalSection
 EndGlobal

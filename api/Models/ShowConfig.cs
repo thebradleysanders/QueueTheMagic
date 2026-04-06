@@ -4,7 +4,7 @@ public class ShowConfig {
     public int Id { get; set; } = 1;
 
     // Site
-    public string SiteName { get; set; } = "Holiday Light Show";
+    public string SiteName { get; set; } = "Queue The Magic";
     public string FmRadioStation { get; set; } = string.Empty;
     public string SocialMediaJson { get; set; } = "[]";
 

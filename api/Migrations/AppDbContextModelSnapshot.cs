@@ -222,7 +222,7 @@ namespace XlightsQueue.Migrations
                             MqttUsername = "",
                             RateLimitWindowMinutes = 60,
                             ShowScheduleJson = "[]",
-                            SiteName = "Holiday Light Show",
+                            SiteName = "Queue The Magic",
                             SocialMediaJson = "[]",
                             SongRequestCost = 1.00m
                         });
