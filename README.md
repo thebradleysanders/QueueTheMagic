@@ -7,7 +7,7 @@ A real-time holiday light show song request and donation web app. Visitors pay v
 ## Goal
 I often get asked 
  * 'how can I donate?'
- * 'how can I see the song list or hours?'
+ * 'how can I see the song list, when can I see it?'
  * 'I love x song from last year, can I see it again?'
    
  I have solved this with a simple self-hosted website users can access from social media or by simple scanning a QR code, for example a yard sign.
@@ -19,15 +19,15 @@ I often get asked
 
 ## Features
 
-- Song request queue with Stripe payment ($1+ per request)
+- Song request queue with [Stripe](https://stripe.com/) payment ($1+ per request)
 - Bump queue position with a donation
 - "Just Because" donations (no song required)
 - Live queue updates via SignalR WebSockets
-- FPP integration — controls playback directly
+- FPP integration, controls playback directly, import sequences, playlists & schedule.
 - Weekly show schedule (hours of operation)
 - Season on/off toggle with custom off-season message
 - Song ratings with admin report
-- Admin dashboard — config, reports, live queue, diagnostics
+- Admin dashboard: config, reports, live queue, diagnostics
 - MQTT event publishing (optional)
 - Light/dark theme
 - Mobile-first responsive design
@@ -40,11 +40,13 @@ I often get asked
 
 - [Docker](https://docs.docker.com/get-docker/) and Docker Compose
 - A [Stripe](https://stripe.com) account (test keys work fine for development)
-- Falcon Player running on your network
+- [Falcon Player](https://github.com/FalconChristmas/fpp) running on your network
+- A reverse proxy like [Traefik](https://github.com/traefik/traefik) or [Nginx Proxy Manager](https://github.com/NginxProxyManager/nginx-proxy-manager), for HTTPS (Required for [Stripe](https://stripe.com))
+    - Ensure websocket support is enabled. 
 
 ### 1. Create a docker-compose.yml
 
-Create a new folder and add this file — no repo clone needed:
+Create a new folder and add this file, no repo clone needed:
 
 ```yaml
 services:
@@ -105,15 +107,15 @@ docker compose pull && docker compose up -d
 
 ## Environment Variables
 
-All configuration is passed via environment variables — no config files to edit.
+All configuration is passed via environment variables, no config files to edit.
 
 | Variable | Default | Description |
 |---|---|---|
 | `Stripe__SecretKey` | — | Stripe secret key (server-side) |
 | `Stripe__PublishableKey` | — | Stripe publishable key (returned to frontend via API) |
 | `AdminPassword` | — | Password for `/admin` login |
-| `Jwt__Secret` | — | Token signing secret — min 32 characters, keep private |
-| `AllowedOrigins` | `http://localhost` | CORS origin — your domain or IP |
+| `Jwt__Secret` | — | Token signing secret, min 32 characters, keep private |
+| `AllowedOrigins` | `https://localhost` | CORS origin — your domain or IP |
 
 > FPP address and all other show settings are configured via the admin dashboard and stored in the database.
 
