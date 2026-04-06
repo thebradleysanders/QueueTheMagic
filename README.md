@@ -10,7 +10,7 @@ I often get asked
  * 'how can I see the song list or hours?'
  * 'I love x song from last year, can I see it again?'
    
- I have solved this with a simple self-hosted website users can aceess from social media or by simple scanning a QR code, for example a yard sign.
+ I have solved this with a simple self-hosted website users can access from social media or by simple scanning a QR code, for example a yard sign.
 
 ---
 
@@ -30,6 +30,9 @@ I often get asked
 - Mobile-first responsive design
 
 ---
+
+## Screenshots
+![App Screenshots](QueueTheMagicWebApp.png)
 
 ## Docker Setup
 
