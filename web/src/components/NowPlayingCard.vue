@@ -86,7 +86,7 @@
 </script>
 
 <template>
-    <div class="relative overflow-hidden rounded-2xl border p-4 md:p-6" :class="isPlaying ? 'border-green-500/30' : 'border-base bg-card'" :style="isPlaying ? cardStyle : {}">
+    <div class="relative overflow-hidden rounded-2xl border p-4 md:p-6" :class="isPlaying ? 'border-green-500/30' : 'border-white/30 bg-card shadow-[0_4px_24px_rgba(104,107,112,0.2)]'" :style="isPlaying ? cardStyle : {}">
         <!-- Glow blob when playing -->
         <div v-if="isPlaying" class="pointer-events-none absolute -top-8 -right-8 h-32 w-32 rounded-full bg-green-400 opacity-20 blur-2xl" />
         <div v-else class="pointer-events-none absolute -bottom-8 -left-8 h-32 w-32 rounded-full bg-white/40 opacity-20 blur-2xl" />

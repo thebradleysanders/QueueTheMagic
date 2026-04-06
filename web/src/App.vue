@@ -55,7 +55,7 @@
 <template>
     <div class="bg-base text-main flex min-h-screen flex-col">
         <!-- Top bar (public) -->
-        <header v-if="!isAdmin" class="bg-card border-base flex items-center justify-between border-b px-4 pt-3 pb-2 md:px-8 md:pt-4 md:pb-3">
+        <header v-if="!isAdmin" class="bg-card border-base flex items-center justify-between border-b px-4 pt-6 pb-2 md:px-8 md:pt-4 md:pb-3 sticky top-0 z-30 shadow-2xl">
             <div class="flex items-center gap-2 md:gap-3">
                 <span class="text-main text-base leading-tight font-bold md:text-2xl">{{ showStore.config.siteName }}</span>
             </div>
@@ -113,7 +113,7 @@
         <!-- Bottom nav (public only, season active) -->
         <nav v-if="!isAdmin && showStore.config.isSeasonActive" class="nav-bg nav-border fixed inset-x-0 bottom-0 z-40 border-t backdrop-blur">
             <!-- Social links strip -->
-            <div v-if="showStore.config.socialLinks?.length" class="border-base flex items-center justify-center gap-5 border-b bg-white/4 py-3">
+            <div v-if="showStore.config.socialLinks?.length" class="border-base flex items-center justify-center gap-5 border-b bg-white/4 py-2">
                 <a v-for="link in showStore.config.socialLinks" :key="link.platform" :href="link.url" target="_blank" rel="noopener" class="flex items-center gap-2 text-xs font-medium transition hover:opacity-80 active:scale-95" :style="`color: ${colorFor(link.platform)}`">
                     <i :class="`pi ${iconFor(link.platform)} !text-xl`"></i>
                     <span class="text-hint text-xs">{{ link.platform }}</span>

@@ -84,13 +84,8 @@
                     </div>
 
                     <div class="flex-1">
-                        <span v-if="entry.enabled && entry.start && entry.end" class="text-sm font-semibold" :class="entry.day === todayName ? 'text-green-600' : 'text-main'">{{ fmt12(entry.start) }} – {{ fmt12(entry.end) }}</span>
+                        <span v-if="entry.enabled && entry.start && entry.end" class="text-sm font-semibold" :class="entry.day === todayName ? 'text-green-600' : 'text-main'">{{ fmt12(entry.start) }} - {{ fmt12(entry.end) }}</span>
                         <span v-else class="text-hint text-sm italic">Closed</span>
-                    </div>
-
-                    <div v-if="entry.day === todayName && entry.enabled" class="shrink-0">
-                        <span v-if="config.isOpen" class="animate-pulse rounded-full border border-green-500/30 bg-green-500/10 px-2 py-0.5 text-xs font-bold text-green-500">LIVE NOW</span>
-                        <span v-else class="text-hint bg-lift rounded-full px-2 py-0.5 text-xs">Tonight</span>
                     </div>
                 </div>
             </div>

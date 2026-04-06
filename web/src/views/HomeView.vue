@@ -86,9 +86,9 @@
 </script>
 
 <template>
-    <div class="mx-auto max-w-lg px-4 pt-4 pb-6 md:max-w-2xl md:px-8">
+    <div class="mx-auto max-w-lg px-4 pt-4 pb-6 md:max-w-2xl md:px-8 space-y-4">
         <!-- FM Radio banner -->
-        <div v-if="showStore.config.fmRadioStation" class="relative mb-5 overflow-hidden rounded-2xl" :class="radioStyle">
+        <div v-if="showStore.config.fmRadioStation" class="relative overflow-hidden rounded-2xl" :class="radioStyle">
             <div class="pointer-events-none absolute inset-0" :style="radioGlowStyle" />
             <div class="relative flex items-center gap-4 px-5 py-4">
                 <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-2xl" :style="radioIconStyle">📻</div>
@@ -111,16 +111,24 @@
         </div>
 
         <!-- Now Playing -->
-        <NowPlayingCard class="mb-5" />
+        <NowPlayingCard />
 
         <!-- Closed notice -->
-        <div v-if="!isOpen" class="mb-5 rounded-2xl border border-orange-500/20 bg-orange-500/10 p-4 text-center">
+        <div
+            v-if="!isOpen"
+            class=" rounded-2xl border p-4 text-center"
+            :class="
+                isDark
+                    ? 'border border-orange-400/35 bg-gradient-to-br from-orange-950 via-orange-900 to-orange-800 shadow-[0_4px_24px_rgba(197,81,34,0.2)]'
+                    : 'border border-orange-400/40 bg-gradient-to-br from-orange-50 via-orange-100 to-orange-50 shadow-[0_2px_12px_rgba(197,81,34,0.15)]'
+            "
+        >
             <div class="mb-1 text-3xl">🌙</div>
-            <p class="font-semibold text-orange-500">Show requests are closed</p>
+            <p class="font-bold " :class="{'text-white/90':isDark, 'text-orange-400':!isDark}">Show requests are closed</p>
         </div>
 
         <!-- CTAs -->
-        <div class="mb-6 flex gap-3">
+        <div class="flex gap-3">
             <button
                 v-if="isOpen"
                 @click="showModal = true"
@@ -136,7 +144,7 @@
                     <span class="text-2xl leading-none text-green-300">
                         <font-awesome-icon :icon="['fas', 'music']" />
                     </span>
-                    <span class="text-sm font-black tracking-wide" :class="isDark ? 'text-white' : 'text-green-900'">Request a Song</span>
+                    <span class="text-sm font-black tracking-wide" :class="isDark ? 'text-white/90' : 'text-green-900'">Request a Song</span>
                     <span class="rounded-full px-2.5 py-0.5 text-xs font-bold" :style="isDark ? 'background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3); color: #86efac' : 'background: rgba(34,197,94,0.2); border: 1px solid rgba(34,197,94,0.4); color: #15803d'">
                         ${{ showStore.config.songRequestCost }}
                     </span>
@@ -155,7 +163,7 @@
                     <span class="text-2xl leading-none text-pink-300">
                         <font-awesome-icon :icon="['fas', 'gift']" />
                     </span>
-                    <span class="text-sm font-black tracking-wide" :class="isDark ? 'text-white' : 'text-pink-900'">Donate</span>
+                    <span class="text-sm font-black tracking-wide" :class="isDark ? 'text-white/90' : 'text-pink-900'">Donate</span>
                     <span
                         class="rounded-full px-2.5 py-0.5 text-xs font-bold"
                         :style="isDark ? 'background: rgba(236,72,153,0.15); border: 1px solid rgba(236,72,153,0.3); color: #f9a8d4' : 'background: rgba(236,72,153,0.2); border: 1px solid rgba(236,72,153,0.4); color: #be185d'"

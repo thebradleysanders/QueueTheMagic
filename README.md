@@ -1,6 +1,6 @@
 # QueueTheMagic
 
-[<img src="https://img.shields.io/badge/dockerhub-latest-sucess.svg?logo=Docker">](https://hub.docker.com/r/thebradleysanders/queue-the-magic)
+[<img src="https://img.shields.io/badge/DockerHub-latest-sucess.svg?logo=Docker">](https://hub.docker.com/r/thebradleysanders/queue-the-magic)
 
 A real-time holiday light show song request and donation web app. Visitors pay via Stripe to queue songs played by [Falcon Player (FPP)](https://falconchristmas.com/). A default playlist runs between requests. Includes an admin dashboard with live queue management, reporting, and MQTT integration.
 
