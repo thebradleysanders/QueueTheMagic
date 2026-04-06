@@ -14,6 +14,9 @@ I often get asked
 
 ---
 
+## Screenshots
+![App Screenshots](QueueTheMagicWebApp.png)
+
 ## Features
 
 - Song request queue with Stripe payment ($1+ per request)
@@ -30,9 +33,6 @@ I often get asked
 - Mobile-first responsive design
 
 ---
-
-## Screenshots
-![App Screenshots](QueueTheMagicWebApp.png)
 
 ## Docker Setup
 
