@@ -71,5 +71,5 @@ a {
 }
 
 /* Scale up base font size on desktop so all rem-based sizes feel comfortable */
-@media (min-width: 768px)  { html { font-size: 17px; } }
-@media (min-width: 1024px) { html { font-size: 18px; } }
+@media (min-width: 768px)  { html { font-size: 14px; } }
+@media (min-width: 1024px) { html { font-size: 15px; } }

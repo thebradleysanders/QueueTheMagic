@@ -31,6 +31,10 @@ I often get asked
 - Song ratings with admin report
 - Admin dashboard: config, reports, live queue, diagnostics
 - MQTT event publishing (optional)
+    - ```test``` - When the test button is clicked in the UI.
+    - ```donation``` - When a 'Just because' donation occurs.
+    - ```nowplaying``` - When now playing changes.
+    - ```songqueued``` - When someone donates to queue a song.
 - Light/dark theme
 - Mobile-first responsive design
 

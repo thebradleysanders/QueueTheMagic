@@ -260,6 +260,30 @@ public class AdminController(
     }
 
     [Authorize]
+    [HttpGet("playlists/{id}/songs")]
+    public async Task<IActionResult> GetPlaylistSongs(int id) {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var songs = await db.Songs
+            .Where(s => s.PlaylistId == id)
+            .OrderBy(s => s.Title)
+            .Select(s => new SongAdminDto(s.Id, s.Title, s.Artist, s.Filename, s.DurationSeconds))
+            .ToListAsync();
+        return Ok(songs);
+    }
+
+    [Authorize]
+    [HttpPut("songs/{id}")]
+    public async Task<IActionResult> UpdateSong(int id, [FromBody] UpdateSongRequest request) {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var song = await db.Songs.FindAsync(id);
+        if (song == null) return NotFound();
+        song.Title = request.Title;
+        song.Artist = request.Artist;
+        await db.SaveChangesAsync();
+        return Ok(new SongAdminDto(song.Id, song.Title, song.Artist, song.Filename, song.DurationSeconds));
+    }
+
+    [Authorize]
     [HttpPost("sync-schedule")]
     public async Task<IActionResult> SyncSchedule() {
         var entries = await fppService.GetScheduleAsync();

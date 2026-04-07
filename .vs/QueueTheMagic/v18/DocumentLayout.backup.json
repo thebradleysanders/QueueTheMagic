@@ -1,7 +1,24 @@
 {
   "Version": 1,
   "WorkspaceRootPath": "C:\\Users\\brads\\source\\AzureDevOps\\QueueTheMagic\\",
-  "Documents": [],
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|c:\\users\\brads\\source\\azuredevops\\queuethemagic\\api\\services\\queueservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|solutionrelative:api\\services\\queueservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|c:\\users\\brads\\source\\azuredevops\\queuethemagic\\api\\services\\queuemanagerservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|solutionrelative:api\\services\\queuemanagerservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|c:\\users\\brads\\source\\azuredevops\\queuethemagic\\api\\controllers\\admincontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|solutionrelative:api\\controllers\\admincontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|c:\\users\\brads\\source\\azuredevops\\queuethemagic\\api\\services\\mqttservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7C5666C1-E697-9333-FD19-A3B49721132B}|api\\QueueTheMagic.csproj|solutionrelative:api\\services\\mqttservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
@@ -9,7 +26,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": -1,
+          "SelectedChildIndex": 3,
           "Children": [
             {
               "$type": "Bookmark",
@@ -22,6 +39,58 @@
             {
               "$type": "Bookmark",
               "Name": "ST:0:0:{3ae79031-e1bc-11d0-8f78-00a0c9110057}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "QueueService.cs",
+              "DocumentMoniker": "C:\\Users\\brads\\source\\AzureDevOps\\QueueTheMagic\\api\\Services\\QueueService.cs",
+              "RelativeDocumentMoniker": "api\\Services\\QueueService.cs",
+              "ToolTip": "C:\\Users\\brads\\source\\AzureDevOps\\QueueTheMagic\\api\\Services\\QueueService.cs",
+              "RelativeToolTip": "api\\Services\\QueueService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABcAAABLAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-07T13:57:38.698Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "AdminController.cs",
+              "DocumentMoniker": "C:\\Users\\brads\\source\\AzureDevOps\\QueueTheMagic\\api\\Controllers\\AdminController.cs",
+              "RelativeDocumentMoniker": "api\\Controllers\\AdminController.cs",
+              "ToolTip": "C:\\Users\\brads\\source\\AzureDevOps\\QueueTheMagic\\api\\Controllers\\AdminController.cs",
+              "RelativeToolTip": "api\\Controllers\\AdminController.cs",
+              "ViewState": "AgIAADABAAAAAAAAAAApwFEBAAAhAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-07T13:56:35.701Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "QueueManagerService.cs",
+              "DocumentMoniker": "C:\\Users\\brads\\source\\AzureDevOps\\QueueTheMagic\\api\\Services\\QueueManagerService.cs",
+              "RelativeDocumentMoniker": "api\\Services\\QueueManagerService.cs",
+              "ToolTip": "C:\\Users\\brads\\source\\AzureDevOps\\QueueTheMagic\\api\\Services\\QueueManagerService.cs",
+              "RelativeToolTip": "api\\Services\\QueueManagerService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABEAAAAEAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-06T19:39:11.665Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "MqttService.cs",
+              "DocumentMoniker": "C:\\Users\\brads\\source\\AzureDevOps\\QueueTheMagic\\api\\Services\\MqttService.cs",
+              "RelativeDocumentMoniker": "api\\Services\\MqttService.cs",
+              "ToolTip": "C:\\Users\\brads\\source\\AzureDevOps\\QueueTheMagic\\api\\Services\\MqttService.cs",
+              "RelativeToolTip": "api\\Services\\MqttService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAADoAAAARAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-06T19:38:50.955Z",
+              "EditorCaption": ""
             }
           ]
         }

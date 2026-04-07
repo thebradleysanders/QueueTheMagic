@@ -24,6 +24,10 @@
     const diagInterval = ref(null);
     const playlistEdits = ref({}); // id → {name, isEnabled}
     const playlistSaving = ref({});
+    const expandedPlaylists = ref({}); // id → bool
+    const playlistSongs = ref({}); // id → SongAdminDto[]
+    const songEdits = ref({}); // songId → {title, artist}
+    const songSaving = ref({}); // songId → bool
 
     onMounted(async () => {
         await Promise.all([admin.fetchReports(), admin.fetchRatings(), admin.fetchConfig(), admin.fetchDiagnostics(), admin.fetchPlaylists()]);
@@ -60,6 +64,10 @@
         }
     }
 
+    async function goHome() {
+        router.push('/');
+    }
+
     async function syncSongs() {
         syncSongsMsg.value = 'Syncing...';
         try {
@@ -94,6 +102,35 @@
         await admin.updatePlaylist(p.id, edit.name, edit.isEnabled);
         delete playlistEdits.value[p.id];
         playlistSaving.value[p.id] = false;
+    }
+
+    async function togglePlaylistSongs(p) {
+        if (expandedPlaylists.value[p.id]) {
+            expandedPlaylists.value[p.id] = false;
+            return;
+        }
+        expandedPlaylists.value[p.id] = true;
+        if (!playlistSongs.value[p.id]) {
+            playlistSongs.value[p.id] = await admin.fetchPlaylistSongs(p.id);
+        }
+    }
+
+    function songEdit(song) {
+        if (!songEdits.value[song.id]) songEdits.value[song.id] = { title: song.title, artist: song.artist };
+        return songEdits.value[song.id];
+    }
+
+    async function saveSong(playlistId, song) {
+        songSaving.value[song.id] = true;
+        const edit = songEdits.value[song.id] ?? { title: song.title, artist: song.artist };
+        const updated = await admin.updateSong(song.id, edit.title, edit.artist);
+        const list = playlistSongs.value[playlistId];
+        if (list) {
+            const idx = list.findIndex(s => s.id === song.id);
+            if (idx !== -1) list[idx] = { ...list[idx], title: updated.title, artist: updated.artist };
+        }
+        delete songEdits.value[song.id];
+        songSaving.value[song.id] = false;
     }
 
     async function testMqtt() {
@@ -354,41 +391,85 @@
                 <p class="text-sm text-gray-600">
                     Go to Config → Falcon Player and click
                     <strong class="text-gray-400">Import Playlists</strong>
-                    .
+                    to pull in playlists from your Falcon Player instance.
                 </p>
             </div>
 
             <div class="space-y-3">
-                <div v-for="p in admin.playlists" :key="p.id" class="flex flex-col gap-3 rounded-xl border border-gray-800 bg-gray-900 p-4 md:flex-row md:items-center">
-                    <div class="min-w-0 flex-1">
-                        <input
-                            :value="(playlistEdits[p.id] ?? p).name"
-                            @input="
-                                e => {
-                                    playlistEdit(p).name = e.target.value;
-                                }
-                            "
-                            class="input w-full"
-                        />
-                        <p class="mt-1 truncate text-xs text-gray-400">FPP: {{ p.fppPlaylistName }} · {{ p.songCount }} songs</p>
-                    </div>
-                    <div class="flex shrink-0 items-center gap-4">
-                        <label class="flex cursor-pointer items-center gap-2 text-sm text-gray-300">
+                <div v-for="p in admin.playlists" :key="p.id" class="rounded-xl border border-gray-800 bg-gray-900">
+                    <!-- Playlist header row -->
+                    <div class="flex flex-col gap-3 p-4 md:flex-row md:items-start">
+                        <div class="min-w-0 flex-1">
                             <input
-                                type="checkbox"
-                                :checked="(playlistEdits[p.id] ?? p).isEnabled"
-                                @change="
+                                :value="(playlistEdits[p.id] ?? p).name"
+                                @input="
                                     e => {
-                                        playlistEdit(p).isEnabled = e.target.checked;
+                                        playlistEdit(p).name = e.target.value;
                                     }
                                 "
-                                class="accent-green-500"
+                                class="input w-full"
                             />
-                            Visible to users
-                        </label>
-                        <button @click="savePlaylist(p)" :disabled="playlistSaving[p.id]" class="rounded-lg bg-green-600 px-3 py-1.5 text-sm text-white hover:bg-green-500 disabled:opacity-40">
-                            {{ playlistSaving[p.id] ? '...' : 'Save' }}
-                        </button>
+                            <p class="mt-1 truncate text-xs text-gray-400">FPP: {{ p.fppPlaylistName }} · {{ p.songCount }} songs</p>
+                        </div>
+                        <div class="flex shrink-0 items-center gap-4">
+                            <label class="flex cursor-pointer items-center gap-2 text-sm text-gray-300">
+                                <input
+                                    type="checkbox"
+                                    :checked="(playlistEdits[p.id] ?? p).isEnabled"
+                                    @change="
+                                        e => {
+                                            playlistEdit(p).isEnabled = e.target.checked;
+                                        }
+                                    "
+                                    class="accent-green-500"
+                                />
+                                Visible to users
+                            </label>
+                            <button @click="savePlaylist(p)" :disabled="playlistSaving[p.id]" class="rounded-lg bg-green-600 px-3 py-1.5 text-sm text-white hover:bg-green-500 disabled:opacity-40">
+                                {{ playlistSaving[p.id] ? '...' : 'Save' }}
+                            </button>
+                            <button @click="togglePlaylistSongs(p)" class="rounded-lg bg-gray-700 px-3 py-1.5 text-sm text-gray-300 hover:bg-gray-600">
+                                {{ expandedPlaylists[p.id] ? 'Hide Songs' : 'Edit Songs' }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Song list (expandable) -->
+                    <div v-if="expandedPlaylists[p.id]" class="border-t border-gray-800 px-4 pb-4 pt-3">
+                        <p v-if="!playlistSongs[p.id]" class="text-sm text-gray-500">Loading...</p>
+                        <p v-else-if="playlistSongs[p.id].length === 0" class="text-sm text-gray-500">No songs in this playlist.</p>
+                        <div v-else class="space-y-2">
+                            <div
+                                v-for="song in playlistSongs[p.id]"
+                                :key="song.id"
+                                class="flex flex-col gap-2 rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 md:flex-row md:items-center"
+                            >
+                                <div class="grid min-w-0 flex-1 grid-cols-1 gap-2 md:grid-cols-2">
+                                    <input
+                                        :value="(songEdits[song.id] ?? song).title"
+                                        @input="e => { songEdit(song).title = e.target.value; }"
+                                        placeholder="Song title"
+                                        class="input text-sm"
+                                    />
+                                    <input
+                                        :value="(songEdits[song.id] ?? song).artist"
+                                        @input="e => { songEdit(song).artist = e.target.value; }"
+                                        placeholder="Artist"
+                                        class="input text-sm"
+                                    />
+                                </div>
+                                <div class="flex shrink-0 items-center gap-2">
+                                    <span class="hidden text-xs text-gray-500 md:block">{{ song.filename }}</span>
+                                    <button
+                                        @click="saveSong(p.id, song)"
+                                        :disabled="songSaving[song.id] || !songEdits[song.id]"
+                                        class="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs text-white hover:bg-indigo-500 disabled:opacity-40"
+                                    >
+                                        {{ songSaving[song.id] ? '...' : 'Save' }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -463,8 +544,8 @@
 
                     <!-- Import section -->
                     <div class="mt-5 border-t border-gray-800 pt-4">
-                        <p class="mb-3 text-xs font-semibold tracking-wide text-gray-500 uppercase">Import from FPP</p>
-                        <p class="mb-4 text-xs text-gray-600">Save your FPP address above first, then import your playlists and songs. Re-run after adding new sequences in FPP.</p>
+                        <p class="mb-3 text-xs font-semibold tracking-wide text-gray-400 uppercase">Import from FPP</p>
+                        <p class="mb-4 text-xs text-gray-500">Save your FPP address above first, then import your playlists and songs. Re-run after adding new sequences in FPP.</p>
                         <div class="flex flex-wrap gap-3">
                             <div class="flex flex-col gap-1">
                                 <button type="button" @click="syncPlaylists" class="rounded-lg px-4 py-2.5 text-sm font-medium text-white transition" style="background: linear-gradient(135deg, #312e81, #4338ca); border: 1px solid rgba(99, 102, 241, 0.4)">
@@ -605,21 +686,27 @@
                 </section>
 
                 <!-- Social Media -->
-                <section class="rounded-xl border border-gray-800 bg-gray-900 p-5">
+                <section class="md:mb-16 rounded-xl border border-gray-800 bg-gray-900 p-5">
                     <h3 class="mb-4 text-sm font-semibold tracking-wide text-gray-300 uppercase">Social Media</h3>
                     <div v-for="(link, i) in socialLinks" :key="i" class="mb-2 flex gap-2">
                         <input v-model="link.platform" class="input flex-1" placeholder="Platform (e.g. facebook)" @input="socialLinks = [...socialLinks]" />
                         <input v-model="link.url" class="input flex-2 grow" placeholder="https://..." @input="socialLinks = [...socialLinks]" />
-                        <button type="button" @click="removeSocialLink(i)" class="px-2 text-red-500 hover:text-red-400">✕</button>
+                        <button type="button" @click="removeSocialLink(i)" class="px-2 text-red-500 hover:text-red-400">
+                            <font-awesome-icon :icon="['fas', 'xmark']" />
+                        </button>
                     </div>
                     <button type="button" @click="addSocialLink" class="mt-2 text-sm text-green-400 hover:text-green-300">+ Add link</button>
                 </section>
 
-                <div class="flex items-center gap-4">
-                    <button type="submit" :disabled="saving" class="rounded-xl bg-green-600 px-6 py-2.5 font-semibold text-white hover:bg-green-500 disabled:opacity-50">
-                        {{ saving ? 'Saving...' : 'Save Configuration' }}
-                    </button>
-                    <span v-if="saveMsg" class="text-sm text-green-400">{{ saveMsg }}</span>
+                <div class="md:fixed bottom-5  flex items-center justify-center gap-4 border-t border-gray-800 bg-gray-900/95 py-3 right-5 md:justify-end px-8 rounded-xl">
+                    <div class="flex items-center gap-2">
+                        <button type="submit" :disabled="saving" class="rounded-xl bg-green-600 px-6 py-2.5 font-semibold text-white hover:bg-green-500 disabled:opacity-50">
+                            {{ saving ? 'Saving...' : 'Save Configuration' }}
+                        </button>
+                        <span v-if="saveMsg" class="text-sm text-green-400">{{ saveMsg }}</span>
+                    </div>
+
+                    <button type="button" @click="goHome" class="text-sm text-gray-400 hover:text-gray-300">Cancel</button>
                 </div>
             </form>
         </div>

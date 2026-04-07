@@ -77,6 +77,9 @@ public record ReportsDto(
 
 public record DailyStatDto(string Date, decimal Donations, int SongsQueued);
 
+public record SongAdminDto(int Id, string Title, string Artist, string Filename, int DurationSeconds);
+public record UpdateSongRequest(string Title, string Artist);
+
 public record SongRatingReportDto(
     int SongId,
     string Title,

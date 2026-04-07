@@ -5,7 +5,7 @@ using XlightsQueue.Models;
 
 namespace XlightsQueue.Services;
 
-public class QueueService(IDbContextFactory<AppDbContext> dbFactory, ILogger<QueueService> logger) {
+public class QueueService(IDbContextFactory<AppDbContext> dbFactory, ILogger<QueueService> logger, MqttService mqttService) {
     public async Task<List<QueueItemDto>> GetQueueAsync() {
         await using var db = await dbFactory.CreateDbContextAsync();
         return await db.QueueItems
@@ -67,6 +67,7 @@ public class QueueService(IDbContextFactory<AppDbContext> dbFactory, ILogger<Que
         };
         db.QueueItems.Add(item);
         await db.SaveChangesAsync();
+        await mqttService.PublishAsync("songqueued", new { song = item, donation = donation, timestamp = DateTime.UtcNow });
 
         logger.LogInformation("Added '{Title}' to queue at position {Position}", song.Title, item.Position);
         return (item, null);

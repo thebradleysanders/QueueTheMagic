@@ -90,6 +90,16 @@ export const useAdminStore = defineStore('admin', () => {
         ratings.value = data;
     }
 
+    async function fetchPlaylistSongs(playlistId) {
+        const { data } = await axios.get(`/api/admin/playlists/${playlistId}/songs`, { headers: authHeaders() });
+        return data;
+    }
+
+    async function updateSong(id, title, artist) {
+        const { data } = await axios.put(`/api/admin/songs/${id}`, { title, artist }, { headers: authHeaders() });
+        return data;
+    }
+
     return {
         token,
         config,
@@ -111,6 +121,8 @@ export const useAdminStore = defineStore('admin', () => {
         skipQueueItem,
         fetchRatings,
         syncSchedule,
+        fetchPlaylistSongs,
+        updateSong,
         authHeaders
     };
 });
