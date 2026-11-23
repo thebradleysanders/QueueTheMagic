@@ -57,7 +57,7 @@ export const useShowStore = defineStore('show', () => {
         try {
             const { data } = await axios.get('/api/show/nowplaying');
             setNowPlaying(data.nowPlaying);
-            config.value = data.config;
+            config.value = { ...data.config, theme: 'dark' };
         } catch (e) {
             console.error('Failed to fetch now playing', e);
         }

@@ -133,12 +133,7 @@
         <div class="border-base mt-6 space-y-1 border-t pt-4 text-center">
             <p class="text-hint text-xs">
                 Created By:
-                <a href="https://github.com/thebradleysanders/" target="_blank" rel="noopener" class="text-sub hover:text-main font-semibold transition">Brad Sanders</a>
-                &nbsp;·&nbsp;
-                <a href="https://github.com/thebradleysanders/QueueTheMagic" target="_blank" rel="noopener" class="hover:text-main inline-flex items-center gap-1 transition">
-                    <i class="fa-brands fa-github text-sm"></i>
-                    QueueTheMagic
-                </a>
+                <span class="text-sub font-semibold">Brad Sanders</span>
             </p>
             <p class="text-hint text-xs">v{{ version }}</p>
         </div>

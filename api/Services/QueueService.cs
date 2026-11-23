@@ -19,30 +19,34 @@ public class QueueService(IDbContextFactory<AppDbContext> dbFactory, ILogger<Que
             .ToListAsync();
     }
 
-    public async Task<(QueueItem? item, string? error)> AddToQueueAsync(int songId, string paymentIntentId, string sessionToken) {
-        await using var db = await dbFactory.CreateDbContextAsync();
-        var config = await db.ShowConfigs.FindAsync(1) ?? new ShowConfig();
-
-        // Rate limiting
+    /// <summary>Rules a song request must pass. Run before taking payment and again before queuing.</summary>
+    public static async Task<string?> ValidateRequestAsync(AppDbContext db, ShowConfig config, int songId, string sessionToken) {
         var windowStart = DateTime.UtcNow.AddMinutes(-config.RateLimitWindowMinutes);
         var recentCount = await db.QueueItems
             .Where(q => q.SessionToken == sessionToken && q.CreatedAt >= windowStart)
             .CountAsync();
-
         if (recentCount >= config.MaxSongsPerWindow)
-            return (null, $"Rate limit: max {config.MaxSongsPerWindow} songs per {config.RateLimitWindowMinutes} minutes.");
+            return $"Rate limit: max {config.MaxSongsPerWindow} songs per {config.RateLimitWindowMinutes} minutes.";
 
-        // Consecutive duplicate prevention
         var lastPending = await db.QueueItems
             .Where(q => q.Status == QueueItemStatus.Pending || q.Status == QueueItemStatus.Playing)
             .OrderByDescending(q => q.Position)
             .FirstOrDefaultAsync();
-
         if (lastPending?.SongId == songId)
-            return (null, "That song is already at the end of the queue.");
+            return "That song is already at the end of the queue.";
 
-        var song = await db.Songs.FindAsync(songId);
-        if (song == null) return (null, "Song not found.");
+        if (!await db.Songs.AnyAsync(x => x.Id == songId))
+            return "Song not found.";
+
+        return null;
+    }
+
+    public async Task<(QueueItem? item, string? error)> AddToQueueAsync(int songId, string paymentIntentId, string sessionToken) {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var config = await db.ShowConfigs.FindAsync(1) ?? new ShowConfig();
+
+        var validationError = await ValidateRequestAsync(db, config, songId, sessionToken);
+        if (validationError != null) return (null, validationError);
 
         var maxPosition = await db.QueueItems
             .Where(q => q.Status == QueueItemStatus.Pending || q.Status == QueueItemStatus.Playing)
@@ -67,7 +71,14 @@ public class QueueService(IDbContextFactory<AppDbContext> dbFactory, ILogger<Que
         };
         db.QueueItems.Add(item);
         await db.SaveChangesAsync();
-        await mqttService.PublishAsync("songqueued", new { song = item, donation = donation, timestamp = DateTime.UtcNow });
+        // Public-safe payload only — never publish session tokens or Stripe IDs to the broker.
+        await mqttService.PublishAsync("songqueued", new {
+            title = song.Title,
+            artist = song.Artist,
+            amount = donation.Amount,
+            position = item.Position,
+            timestamp = DateTime.UtcNow
+        });
 
         logger.LogInformation("Added '{Title}' to queue at position {Position}", song.Title, item.Position);
         return (item, null);

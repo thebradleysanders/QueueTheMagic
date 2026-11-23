@@ -23,7 +23,7 @@ export function useSignalR() {
         });
 
         connection.on('ShowConfigUpdated', config => {
-            showStore.config = config;
+            showStore.config = { ...config, theme: 'dark' };
         });
 
         connection.on('QueueItemAdded', item => {

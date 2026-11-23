@@ -44,7 +44,7 @@ public class PaymentService(ILogger<PaymentService> logger, IWebHostEnvironment 
 
         try {
             var service = new PaymentIntentService();
-            var intent = await service.GetAsync(paymentIntentId);
+            var intent = await service.GetAsync(paymentIntentId, new PaymentIntentGetOptions { Expand = ["latest_charge"] });
 
             if (intent.Status != "succeeded")
                 return new(false, 0, "Payment not confirmed.");
@@ -59,6 +59,9 @@ public class PaymentService(ILogger<PaymentService> logger, IWebHostEnvironment 
                 }
             }
 
+            if (intent.LatestCharge is { AmountRefunded: > 0 })
+                return new(false, 0, "This payment was refunded.");
+
             var paid = intent.AmountReceived / 100m;
             if (paid < minAmount)
                 return new(false, 0, "Payment amount is too low.");
@@ -71,6 +74,22 @@ public class PaymentService(ILogger<PaymentService> logger, IWebHostEnvironment 
         } catch (Exception ex) {
             logger.LogWarning("Stripe verify failed for {Id}: {Message}", paymentIntentId, ex.Message);
             return new(false, 0, "Payment not verified.");
+        }
+    }
+
+    /// <summary>Refunds a verified payment that could not be fulfilled. Returns false if the refund failed.</summary>
+    public async Task<bool> RefundAsync(string paymentIntentId, string reason) {
+        if (env.IsDevelopment() && paymentIntentId == DevIntentId) return true;
+        try {
+            await new RefundService().CreateAsync(new RefundCreateOptions {
+                PaymentIntent = paymentIntentId,
+                Metadata = new Dictionary<string, string> { ["reason"] = reason }
+            });
+            logger.LogWarning("Refunded {Id}: {Reason}", paymentIntentId, reason);
+            return true;
+        } catch (Exception ex) {
+            logger.LogError(ex, "REFUND FAILED for {Id} ({Reason}) — refund manually in Stripe", paymentIntentId, reason);
+            return false;
         }
     }
 }

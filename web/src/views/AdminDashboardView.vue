@@ -653,6 +653,10 @@
                 <!-- MQTT -->
                 <section class="rounded-xl border border-gray-800 bg-gray-900 p-5">
                     <h3 class="mb-4 text-sm font-semibold tracking-wide text-gray-300 uppercase">MQTT</h3>
+                    <p class="mb-4 text-xs leading-relaxed text-gray-400">
+                        Optional. Publishes events (song requested, donation, now playing) to an MQTT broker so other tools, such as Home Assistant, phone alerts or a roadside sign, can react to them. The show works the same with this off.
+                        <a href="https://github.com/thebradleysanders/QueueTheMagic/blob/main/docs/MQTT.md" target="_blank" rel="noopener" class="text-blue-400 underline">Read the MQTT guide</a>
+                    </p>
                     <label class="mb-4 flex cursor-pointer items-center gap-2 text-sm text-gray-300">
                         <input type="checkbox" v-model="editConfig.mqttEnabled" class="accent-green-500" />
                         Enable MQTT

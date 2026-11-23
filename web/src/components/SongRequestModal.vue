@@ -1,7 +1,7 @@
 <script setup>
     import axios from 'axios';
 
-    import { nextTick, onMounted, onUnmounted, ref } from 'vue';
+    import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 
     import { usePayment } from '@/composables/usePayment';
     import { useSeason } from '@/composables/useSeason';
@@ -16,6 +16,19 @@
     const sessionStore = useSessionStore();
     const { createIntent, mountPaymentElement, confirmPayment } = usePayment();
     const { season } = useSeason();
+
+    // How long until a song requested right now would play.
+    const songsAhead = computed(() => showStore.queue.length);
+    const waitSeconds = computed(() => {
+        let secs = 0;
+        for (const q of showStore.queue) {
+            if (q.status === 'Playing') secs += showStore.nowPlaying?.secondsRemaining || q.durationSeconds || 0;
+            else secs += q.durationSeconds || 0;
+        }
+        return secs;
+    });
+    const waitMinutes = computed(() => Math.max(1, Math.round(waitSeconds.value / 60)));
+    const longWait = computed(() => waitSeconds.value >= 15 * 60);
 
     const playlists = ref([]);
     const selectedPlaylist = ref(null);
@@ -119,6 +132,15 @@
                 <button @click="emit('close')" aria-label="Close" class="text-hint hover:text-main flex h-8 w-8 items-center justify-center text-xl">
                     <font-awesome-icon :icon="['fas', 'xmark']" />
                 </button>
+            </div>
+
+            <!-- Queue wait estimate -->
+            <div v-if="step === 'select'" class="border-base border-b px-5 py-2.5 text-xs" :class="longWait ? 'bg-ac3-soft text-ac3' : 'text-sub'">
+                <template v-if="songsAhead === 0">✨ The queue is empty — your song plays next!</template>
+                <template v-else>
+                    ⏱ {{ songsAhead }} {{ songsAhead === 1 ? 'song' : 'songs' }} ahead of you · about {{ waitMinutes }} min wait
+                    <span v-if="longWait" class="block opacity-80">It's a busy night! You can boost your song up the queue after requesting it.</span>
+                </template>
             </div>
 
             <!-- Step: select playlist -->

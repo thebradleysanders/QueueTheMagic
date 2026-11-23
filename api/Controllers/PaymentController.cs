@@ -48,6 +48,8 @@ public class PaymentController(
                     return BadRequest(new { error = "The show is not running this season." });
                 if (!ScheduleHelper.IsOpen(config.ShowScheduleJson))
                     return BadRequest(new { error = "The show is currently closed. Please come back during show hours." });
+                var songError = await QueueService.ValidateRequestAsync(db, config, request.SongId.Value, request.SessionToken);
+                if (songError != null) return BadRequest(new { error = songError });
                 amountCents = (long)Math.Round(config.SongRequestCost * 100);
                 metadata["songId"] = request.SongId.Value.ToString();
                 break;

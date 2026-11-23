@@ -193,20 +193,26 @@ public class FppService(IDbContextFactory<AppDbContext> dbFactory, ILogger<FppSe
             return false;
         }
 
-        var started = await CallAsync($"/api/playlist/{TempPlaylist}/start");
-        return started?.IsSuccessStatusCode == true;
+        return await PostThenGetAsync($"/api/playlist/{TempPlaylist}/start");
     }
 
-    // GET /api/playlist/{name}/start
+    // FPP 10.3+ deprecates state-changing GET routes (FPP 11 will require POST).
+    // Use POST first; fall back to the old GET for older FPP versions.
+    private async Task<bool> PostThenGetAsync(string path) {
+        var post = await PostJsonAsync(path, "{}");
+        if (post?.IsSuccessStatusCode == true) return true;
+        var get = await CallAsync(path);
+        return get?.IsSuccessStatusCode == true;
+    }
+
+    // POST (or legacy GET) /api/playlist/{name}/start
     public async Task<bool> StartPlaylistAsync(string name) {
-        var response = await CallAsync($"/api/playlist/{Uri.EscapeDataString(name)}/start");
-        return response?.IsSuccessStatusCode == true;
+        return await PostThenGetAsync($"/api/playlist/{Uri.EscapeDataString(name)}/start");
     }
 
-    // GET /api/playlists/stop
+    // POST (or legacy GET) /api/playlists/stop
     public async Task<bool> StopPlaylistAsync() {
-        var response = await CallAsync("/api/playlists/stop");
-        return response?.IsSuccessStatusCode == true;
+        return await PostThenGetAsync("/api/playlists/stop");
     }
 
     // GET /api/playlist/{name} → parse entries from mainPlaylist section

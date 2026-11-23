@@ -1,31 +1,7 @@
-import { watch } from 'vue';
+import { onMounted } from 'vue';
 
-import { useShowStore } from '@/stores/show';
-
+// The public site is dark-only.
 export function useTheme() {
-    const showStore = useShowStore();
-
-    function applyTheme(theme) {
-        const root = document.documentElement;
-        if (theme === 'dark') {
-            root.classList.add('dark');
-        } else {
-            root.classList.remove('dark');
-        }
-        localStorage.setItem('theme', theme);
-    }
-
-    function toggleTheme() {
-        const next = showStore.config.theme === 'dark' ? 'light' : 'dark';
-        showStore.config.theme = next;
-        applyTheme(next);
-    }
-
-    watch(
-        () => showStore.config.theme,
-        t => applyTheme(t),
-        { immediate: true }
-    );
-
-    return { toggleTheme };
+    onMounted(() => document.documentElement.classList.add('dark'));
+    document.documentElement.classList.add('dark');
 }

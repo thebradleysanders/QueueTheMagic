@@ -15,7 +15,7 @@
 
     const showStore = useShowStore();
     useSignalR();
-    const { toggleTheme } = useTheme();
+    useTheme();
     const { season } = useSeason();
 
     onMounted(() => {
@@ -26,7 +26,7 @@
     const route = useRoute();
     const isAdmin = computed(() => route.path.startsWith('/admin'));
     const pendingCount = computed(() => showStore.queue.filter(q => q.status === 'Pending').length);
-    const isDark = computed(() => showStore.config.theme !== 'light');
+    const isDark = computed(() => true);
 
     const platformIcon = {
         facebook: 'pi-facebook',
@@ -73,14 +73,6 @@
                 </div>
             </div>
             <div class="flex items-center gap-6 md:gap-4">
-                <!-- Theme toggle -->
-                <button @click="toggleTheme" class="text-hint hover:text-sub text-lg leading-none transition md:text-2xl" :title="isDark ? 'Switch to light mode' : 'Switch to dark mode'" :aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'">
-                    {{ isDark ? '☀️' : '🌙' }}
-                </button>
-                <!-- GitHub -->
-                <a href="https://github.com/thebradleysanders/QueueTheMagic" target="_blank" rel="noopener" class="text-hint hover:text-sub transition" title="View on GitHub" aria-label="View on GitHub">
-                    <font-awesome-icon :icon="['fab', 'github']" class="text-lg leading-none md:text-2xl" />
-                </a>
                 <RouterLink to="/admin/login" class="hover:text-hint !text-blue-300" aria-label="Admin login">
                     <font-awesome-icon :icon="['fas', 'user-gear']" class="text-lg md:text-2xl" />
                 </RouterLink>

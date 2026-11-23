@@ -20,6 +20,16 @@ public class QueueController(
     public async Task<IActionResult> GetQueue() =>
         Ok(await queueService.GetQueueAsync());
 
+    // The customer already paid, so a rejected request must give the money back.
+    private async Task<IActionResult> RefundAndFail(string paymentIntentId, string error) {
+        var refunded = await paymentService.RefundAsync(paymentIntentId, error);
+        return BadRequest(new {
+            error = refunded
+                ? $"{error} You have not been charged (your payment was refunded)."
+                : $"{error} We could not refund you automatically — please contact the show owner."
+        });
+    }
+
     [HttpPost]
     public async Task<IActionResult> AddToQueue([FromBody] AddToQueueRequest request) {
         if (string.IsNullOrWhiteSpace(request.SessionToken) || request.SessionToken.Length > 64)
@@ -41,7 +51,7 @@ public class QueueController(
             if (!verified.Ok) return BadRequest(new { error = verified.Error });
 
             var (item, error) = await queueService.AddToQueueAsync(request.SongId, request.PaymentIntentId, request.SessionToken);
-            if (error != null) return BadRequest(new { error });
+            if (error != null) return await RefundAndFail(request.PaymentIntentId, error);
 
             queueTrigger.TriggerImmediateCheck();
             var queue = await queueService.GetQueueAsync();
@@ -69,7 +79,7 @@ public class QueueController(
             if (!verified.Ok) return BadRequest(new { error = verified.Error });
 
             var (success, error) = await queueService.BumpAsync(id, request.PaymentIntentId, request.SessionToken);
-            if (!success) return BadRequest(new { error });
+            if (!success) return await RefundAndFail(request.PaymentIntentId, error ?? "Boost failed.");
 
             queueTrigger.TriggerImmediateCheck();
             var queue = await queueService.GetQueueAsync();

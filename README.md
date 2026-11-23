@@ -30,12 +30,12 @@ I often get asked
 - Season on/off toggle with custom off-season message
 - Song ratings with admin report
 - Admin dashboard: config, reports, live queue, diagnostics
-- MQTT event publishing (optional)
+- MQTT event publishing (optional) for phone alerts, Home Assistant, signs and more. **[See the MQTT guide](docs/MQTT.md)**
     - ```test``` - When the test button is clicked in the UI.
     - ```donation``` - When a 'Just because' donation occurs.
     - ```nowplaying``` - When now playing changes.
     - ```songqueued``` - When someone donates to queue a song.
-- Light/dark theme plus **automatic seasonal themes** (Christmas, Halloween, Valentine's, St. Patrick's, Spring, 4th of July, Autumn, Winter) with a matching string of lights and falling decorations
+- Dark theme with **automatic seasonal themes** (Christmas, Halloween, Valentine's, St. Patrick's, Spring, 4th of July, Autumn, Winter) with a matching string of lights and falling decorations
 - Mobile-first responsive design
 
 ---
