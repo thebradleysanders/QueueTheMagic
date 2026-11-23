@@ -12,6 +12,7 @@
     import { useShowStore } from '@/stores/show';
 
     import SeasonDecor from '@/components/SeasonDecor.vue';
+    import StarLogo from '@/components/StarLogo.vue';
 
     import { version } from '../package.json';
 
@@ -76,7 +77,7 @@
         <!-- Top bar (public) -->
         <div v-if="!isAdmin" class="sticky top-0 z-30"><header class="bg-card border-base flex items-center justify-between border-b px-4 pt-6 pb-2 shadow-2xl md:px-8 md:pt-4 md:pb-3">
             <div class="flex items-center gap-2 md:gap-3">
-                <span class="text-2xl leading-none md:text-3xl" aria-hidden="true">{{ season.emoji }}</span>
+                <StarLogo class="text-3xl leading-none md:text-4xl" />
                 <div class="min-w-0">
                     <span class="text-main block truncate text-base leading-tight font-bold md:text-2xl">{{ showStore.config.siteName }}</span>
                     <span class="text-ac1-strong hidden text-[10px] font-semibold tracking-widest uppercase sm:block">{{ season.tagline }}</span>
