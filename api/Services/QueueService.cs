@@ -48,6 +48,8 @@ public class QueueService(IDbContextFactory<AppDbContext> dbFactory, ILogger<Que
         var validationError = await ValidateRequestAsync(db, config, songId, sessionToken);
         if (validationError != null) return (null, validationError);
 
+        var song = (await db.Songs.FindAsync(songId))!;
+
         var maxPosition = await db.QueueItems
             .Where(q => q.Status == QueueItemStatus.Pending || q.Status == QueueItemStatus.Playing)
             .Select(q => (int?)q.Position)
