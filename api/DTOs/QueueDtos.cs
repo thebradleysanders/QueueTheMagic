@@ -72,10 +72,14 @@ public record ReportsDto(
     int TotalSongsQueued,
     decimal HighestDonation,
     string? TopSong,
-    List<DailyStatDto> DailyStats
+    List<DailyStatDto> DailyStats,
+    int TotalVisits,
+    int UniqueDevices,
+    int VisitsToday
 );
 
-public record DailyStatDto(string Date, decimal Donations, int SongsQueued);
+public record DailyStatDto(string Date, decimal Donations, int SongsQueued, int Visits, int Devices);
+public record VisitRequest(string SessionToken);
 
 public record SongAdminDto(int Id, string Title, string Artist, string Filename, int DurationSeconds);
 public record UpdateSongRequest(string Title, string Artist);

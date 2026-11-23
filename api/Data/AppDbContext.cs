@@ -12,6 +12,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<ShowConfig> ShowConfigs => Set<ShowConfig>();
     public DbSet<ThankYou> ThankYous => Set<ThankYou>();
     public DbSet<SongRating> SongRatings => Set<SongRating>();
+    public DbSet<Visit> Visits => Set<Visit>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
         modelBuilder.Entity<ShowConfig>().HasData(new ShowConfig { Id = 1 });
@@ -24,5 +25,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasIndex(r => new { r.SongId, r.SessionToken })
             .IsUnique();
 
+        modelBuilder.Entity<Visit>().HasIndex(v => v.CreatedAt);
+        modelBuilder.Entity<Visit>().HasIndex(v => new { v.SessionToken, v.CreatedAt });
     }
 }

@@ -129,6 +129,9 @@ public class AdminController(
         var queueItems = await db.QueueItems.Include(q => q.Song)
             .Where(q => q.CreatedAt >= since).ToListAsync();
 
+        var visits = await db.Visits.Where(v => v.CreatedAt >= since)
+            .Select(v => new { v.SessionToken, v.CreatedAt }).ToListAsync();
+
         var totalDonations = donations.Sum(d => d.Amount);
         var highestDonation = donations.Any() ? donations.Max(d => d.Amount) : 0;
         var totalPlayed = queueItems.Count(q => q.Status == QueueItemStatus.Played);
@@ -144,12 +147,17 @@ public class AdminController(
             .Select(date => new DailyStatDto(
                 date.ToString("yyyy-MM-dd"),
                 donations.Where(d => d.CreatedAt.Date == date).Sum(d => d.Amount),
-                queueItems.Count(q => q.CreatedAt.Date == date)
+                queueItems.Count(q => q.CreatedAt.Date == date),
+                visits.Count(v => v.CreatedAt.Date == date),
+                visits.Where(v => v.CreatedAt.Date == date).Select(v => v.SessionToken).Distinct().Count()
             ))
             .OrderBy(d => d.Date)
             .ToList();
 
-        return Ok(new ReportsDto(totalDonations, totalPlayed, totalQueued, highestDonation, topSong, dailyStats));
+        return Ok(new ReportsDto(totalDonations, totalPlayed, totalQueued, highestDonation, topSong, dailyStats,
+            visits.Count,
+            visits.Select(v => v.SessionToken).Distinct().Count(),
+            visits.Count(v => v.CreatedAt.Date == DateTime.UtcNow.Date)));
     }
 
     [Authorize]

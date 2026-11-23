@@ -367,6 +367,28 @@ namespace XlightsQueue.Migrations
                     b.Navigation("Playlist");
                 });
 
+            modelBuilder.Entity("XlightsQueue.Models.Visit", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SessionToken")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("SessionToken", "CreatedAt");
+
+                    b.ToTable("Visits");
+                });
+
             modelBuilder.Entity("XlightsQueue.Models.SongRating", b =>
                 {
                     b.HasOne("XlightsQueue.Models.Song", "Song")

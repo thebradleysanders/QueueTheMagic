@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using XlightsQueue.Data;
@@ -13,7 +14,41 @@ public class ShowController(
     IDbContextFactory<AppDbContext> dbFactory,
     QueueManagerService queueManager,
     FppService fppService,
+    MqttService mqttService,
     IConfiguration configuration) : ControllerBase {
+    // A device that re-opens the site within this window counts as the same visit
+    // (stops refresh-spam inflating stats and flooding MQTT).
+    private static readonly TimeSpan VisitWindow = TimeSpan.FromMinutes(30);
+
+    [EnableRateLimiting("visit")]
+    [HttpPost("visit")]
+    public async Task<IActionResult> RecordVisit([FromBody] VisitRequest request) {
+        if (string.IsNullOrWhiteSpace(request.SessionToken) || request.SessionToken.Length > 64)
+            return BadRequest(new { error = "Invalid session." });
+
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var now = DateTime.UtcNow;
+
+        var last = await db.Visits
+            .Where(v => v.SessionToken == request.SessionToken)
+            .OrderByDescending(v => v.CreatedAt)
+            .Select(v => (DateTime?)v.CreatedAt)
+            .FirstOrDefaultAsync();
+
+        if (last != null && now - last.Value < VisitWindow)
+            return Ok(new { counted = false });
+
+        var isNewDevice = last == null;
+        db.Visits.Add(new Models.Visit { SessionToken = request.SessionToken, CreatedAt = now });
+        await db.SaveChangesAsync();
+
+        var today = now.Date;
+        var visitsToday = await db.Visits.CountAsync(v => v.CreatedAt >= today);
+        await mqttService.PublishAsync("visit", new { newDevice = isNewDevice, visitsToday, timestamp = now });
+
+        return Ok(new { counted = true });
+    }
+
     [HttpGet("nowplaying")]
     public async Task<IActionResult> GetNowPlaying() {
         await using var db = await dbFactory.CreateDbContextAsync();

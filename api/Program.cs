@@ -68,6 +68,8 @@ builder.Services.AddRateLimiter(options => {
     options.AddPolicy("payment", ctx => PerIp(ctx, 15, TimeSpan.FromMinutes(1)));
     // Ballot-stuffing protection for song ratings
     options.AddPolicy("rating", ctx => PerIp(ctx, 30, TimeSpan.FromMinutes(1)));
+    // Visit counter: generous (many phones can share one yard Wi-Fi / carrier NAT) but bounded
+    options.AddPolicy("visit", ctx => PerIp(ctx, 60, TimeSpan.FromMinutes(1)));
 });
 
 // nginx (127.0.0.1) sits in front of Kestrel and sets X-Forwarded-For.

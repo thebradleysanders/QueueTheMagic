@@ -1,4 +1,5 @@
 <script setup>
+    import axios from 'axios';
     import { RouterLink, RouterView, useRoute } from 'vue-router';
 
     import { computed, onMounted } from 'vue';
@@ -7,6 +8,7 @@
     import { useSignalR } from '@/composables/useSignalR';
     import { useTheme } from '@/composables/useTheme';
 
+    import { useSessionStore } from '@/stores/session';
     import { useShowStore } from '@/stores/show';
 
     import SeasonDecor from '@/components/SeasonDecor.vue';
@@ -14,11 +16,19 @@
     import { version } from '../package.json';
 
     const showStore = useShowStore();
+    const sessionStore = useSessionStore();
     useSignalR();
+
+    // Count one visit per page load (the server merges re-opens within 30 min). Never for admin pages.
+    function recordVisit() {
+        if (window.location.pathname.startsWith('/admin')) return;
+        axios.post('/api/show/visit', { sessionToken: sessionStore.sessionToken }).catch(() => {});
+    }
     useTheme();
     const { season } = useSeason();
 
     onMounted(() => {
+        recordVisit();
         showStore.fetchNowPlaying();
         showStore.fetchQueue();
     });

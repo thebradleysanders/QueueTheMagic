@@ -175,6 +175,27 @@
         ]
     }));
 
+    const visitsChartData = computed(() => ({
+        labels: admin.reports?.dailyStats.map(d => d.date.slice(5)) ?? [],
+        datasets: [
+            {
+                type: 'bar',
+                label: 'Visits',
+                data: admin.reports?.dailyStats.map(d => d.visits) ?? [],
+                backgroundColor: 'rgba(56,189,248,0.6)',
+                borderRadius: 4
+            },
+            {
+                type: 'line',
+                label: 'Unique devices',
+                data: admin.reports?.dailyStats.map(d => d.devices) ?? [],
+                borderColor: '#f472b6',
+                backgroundColor: 'rgba(244,114,182,0.1)',
+                tension: 0.3
+            }
+        ]
+    }));
+
     const chartOptions = {
         responsive: true,
         maintainAspectRatio: false,
@@ -307,8 +328,30 @@
                 </div>
             </div>
 
+            <!-- Visitor stat cards -->
+            <div v-if="admin.reports" class="mb-6 grid grid-cols-3 gap-4">
+                <div class="rounded-xl border border-gray-800 bg-gray-900 p-4">
+                    <p class="mb-1 text-xs text-gray-400">Visits Today</p>
+                    <p class="text-2xl font-bold text-sky-400">{{ admin.reports.visitsToday }}</p>
+                </div>
+                <div class="rounded-xl border border-gray-800 bg-gray-900 p-4">
+                    <p class="mb-1 text-xs text-gray-400">Visits (30d)</p>
+                    <p class="text-2xl font-bold text-white">{{ admin.reports.totalVisits }}</p>
+                </div>
+                <div class="rounded-xl border border-gray-800 bg-gray-900 p-4">
+                    <p class="mb-1 text-xs text-gray-400">Unique Devices (30d)</p>
+                    <p class="text-2xl font-bold text-pink-400">{{ admin.reports.uniqueDevices }}</p>
+                </div>
+            </div>
+
             <!-- Charts -->
             <div v-if="admin.reports" class="mb-8 grid gap-6 md:grid-cols-2">
+                <div class="rounded-xl border border-gray-800 bg-gray-900 p-5 md:col-span-2">
+                    <p class="mb-4 text-sm text-gray-400">Visits &amp; Unique Devices (30d)</p>
+                    <div class="h-48">
+                        <Bar :data="visitsChartData" :options="chartOptions" />
+                    </div>
+                </div>
                 <div class="rounded-xl border border-gray-800 bg-gray-900 p-5">
                     <p class="mb-4 text-sm text-gray-400">Daily Donations (30d)</p>
                     <div class="h-48">
