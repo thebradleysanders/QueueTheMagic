@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
@@ -22,6 +23,7 @@ public class AdminController(
     IDbContextFactory<AppDbContext> dbFactory,
     IHubContext<ShowHub> hub,
     IConfiguration configuration) : ControllerBase {
+    [EnableRateLimiting("login")]
     [HttpPost("login")]
     public IActionResult Login([FromBody] AdminLoginRequest request) {
         if (!authService.ValidatePassword(request.Password))
@@ -45,7 +47,15 @@ public class AdminController(
         var config = await db.ShowConfigs.FindAsync(1);
         if (config == null) return NotFound();
 
-        config.SiteName = updated.SiteName;
+        // Stripe rejects charges under $0.50 and the UI is not designed for huge amounts.
+        if (updated.SongRequestCost < 0.5m || updated.BumpCost < 0.5m || updated.DonateCost < 0.5m
+            || updated.SongRequestCost > 1000m || updated.BumpCost > 1000m || updated.DonateCost > 1000m)
+            return BadRequest(new { error = "Prices must be between $0.50 and $1000." });
+        if (string.IsNullOrWhiteSpace(updated.SiteName) || updated.SiteName.Length > 100)
+            return BadRequest(new { error = "Site name is required (max 100 characters)." });
+        updated.SocialMediaJson = SanitizeSocialLinks(updated.SocialMediaJson);
+
+        config.SiteName = updated.SiteName.Trim();
         config.FmRadioStation = updated.FmRadioStation;
         config.SocialMediaJson = updated.SocialMediaJson;
         config.SongRequestCost = updated.SongRequestCost;
@@ -86,6 +96,23 @@ public class AdminController(
         await hub.Clients.All.SendAsync("ShowConfigUpdated", publicConfig);
 
         return Ok(config);
+    }
+
+    // Only http(s) links are allowed so a stored "javascript:" URL can never run in a visitor's browser.
+    private static string SanitizeSocialLinks(string? json) {
+        try {
+            var links = JsonSerializer.Deserialize<List<SocialLinkDto>>(json ?? "[]",
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? [];
+            var safe = links
+                .Where(l => !string.IsNullOrWhiteSpace(l.Platform)
+                    && Uri.TryCreate(l.Url, UriKind.Absolute, out var u)
+                    && (u.Scheme == Uri.UriSchemeHttp || u.Scheme == Uri.UriSchemeHttps))
+                .Select(l => new { platform = l.Platform.Trim(), url = l.Url.Trim() })
+                .ToList();
+            return JsonSerializer.Serialize(safe);
+        } catch {
+            return "[]";
+        }
     }
 
     [Authorize]

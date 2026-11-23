@@ -1,7 +1,7 @@
 <script setup>
     import axios from 'axios';
 
-    import { computed, nextTick, ref } from 'vue';
+    import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 
     import { usePayment } from '@/composables/usePayment';
 
@@ -14,6 +14,13 @@
     const { createIntent, mountPaymentElement, confirmPayment } = usePayment();
 
     const isDev = import.meta.env.DEV;
+
+    function onKey(e) {
+        if (e.key === 'Escape' && !loading.value) emit('close');
+    }
+    onMounted(() => window.addEventListener('keydown', onKey));
+    onUnmounted(() => window.removeEventListener('keydown', onKey));
+
     const min = computed(() => Number(showStore.config.donateCost) || 1);
     const presets = computed(() => {
         const m = min.value;
@@ -90,11 +97,11 @@
 </script>
 
 <template>
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" @click.self="emit('close')">
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-label="Donate" @click.self="emit('close')">
         <div class="bg-card border-base w-full max-w-sm overflow-hidden rounded-2xl border">
             <div class="border-base flex items-center justify-between border-b px-6 py-4">
                 <h2 class="text-main text-lg font-bold">Donate Just Because ❤️</h2>
-                <button @click="emit('close')" class="text-hint hover:text-main text-xl">✕</button>
+                <button @click="emit('close')" aria-label="Close" class="text-hint hover:text-main text-xl">✕</button>
             </div>
 
             <div v-if="step === 'select'" class="p-5">
@@ -103,7 +110,7 @@
                 <div v-if="errorMsg" class="mb-4 rounded-lg bg-red-500/20 p-3 text-sm text-red-500">{{ errorMsg }}</div>
 
                 <div class="mb-4 grid grid-cols-4 gap-2">
-                    <button v-for="v in presets" :key="v" @click="pickPreset(v)" class="rounded-lg border py-2.5 text-sm font-semibold transition" :class="selectedAmount === v ? 'border-green-500/40 bg-green-500/20 text-green-600' : 'bg-lift text-sub border-base hover:bg-inset'">
+                    <button v-for="v in presets" :key="v" @click="pickPreset(v)" class="rounded-lg border py-2.5 text-sm font-semibold transition" :class="selectedAmount === v ? 'border-ac1-soft bg-ac1-soft text-ac1-strong' : 'bg-lift text-sub border-base hover:bg-inset'">
                         ${{ v % 1 === 0 ? v : v.toFixed(2) }}
                     </button>
                 </div>
@@ -117,12 +124,12 @@
                         :min="min"
                         step="0.01"
                         placeholder="Other amount"
-                        class="bg-lift border-base text-main w-full rounded-lg border py-2 pr-3 pl-7 text-sm focus:border-green-500 focus:outline-none"
-                        :class="{ 'border-green-500/50': selectedAmount === null && amountValid }"
+                        class="bg-lift border-base text-main w-full rounded-lg border py-2 pr-3 pl-7 text-sm focus-ac1"
+                        :class="{ 'border-ac1-soft': selectedAmount === null && amountValid }"
                     />
                 </div>
 
-                <button @click="donate" :disabled="!amountValid || loading" class="w-full rounded-xl bg-green-600 py-3 font-semibold text-white transition hover:bg-green-500 disabled:opacity-40">
+                <button @click="donate" :disabled="!amountValid || loading" class="btn-ac w-full rounded-xl py-3 font-semibold transition disabled:opacity-40">
                     {{ loading ? 'Processing...' : isDev ? `⚡ Donate $${amount ?? '—'} (dev)` : `Donate $${amount?.toFixed(2) ?? '—'}` }}
                 </button>
             </div>
@@ -130,7 +137,7 @@
             <div v-if="step === 'payment'" class="p-5">
                 <div v-if="errorMsg" class="mb-3 rounded-lg bg-red-500/20 p-3 text-sm text-red-400">{{ errorMsg }}</div>
                 <div ref="paymentElementRef"></div>
-                <button @click="submitPayment" :disabled="loading" class="mt-4 w-full rounded-xl bg-green-600 py-3 font-semibold text-white transition hover:bg-green-500 disabled:opacity-40">
+                <button @click="submitPayment" :disabled="loading" class="btn-ac mt-4 w-full rounded-xl py-3 font-semibold transition disabled:opacity-40">
                     {{ loading ? 'Processing...' : `Donate $${amount?.toFixed(2)}` }}
                 </button>
             </div>
@@ -141,7 +148,7 @@
                 <div class="mb-3 text-4xl">🙏</div>
                 <p class="text-main text-lg font-bold">Thank you!</p>
                 <p class="text-hint mt-1 text-sm">Your donation keeps the lights on.</p>
-                <button @click="emit('close')" class="mt-4 rounded-lg bg-green-600 px-6 py-2 text-sm text-white hover:bg-green-500">Done</button>
+                <button @click="emit('close')" class="btn-ac mt-4 rounded-lg px-6 py-2 text-sm">Done</button>
             </div>
         </div>
     </div>

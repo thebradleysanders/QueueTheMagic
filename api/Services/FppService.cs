@@ -134,6 +134,25 @@ public class FppService(IDbContextFactory<AppDbContext> dbFactory, ILogger<FppSe
 
     public List<FppCommandLogEntry> GetCommandLog() => _commandLog.ToList();
 
+    // The public now-playing endpoint is unauthenticated; cache FPP's answer briefly so a crowd
+    // of visitors can never hammer the (often Raspberry Pi) player.
+    private FppStatus? _cachedStatus;
+    private DateTime _cachedStatusAt = DateTime.MinValue;
+    private readonly SemaphoreSlim _statusCacheLock = new(1, 1);
+
+    public async Task<FppStatus?> GetStatusCachedAsync(TimeSpan maxAge) {
+        if (DateTime.UtcNow - _cachedStatusAt < maxAge) return _cachedStatus;
+        await _statusCacheLock.WaitAsync();
+        try {
+            if (DateTime.UtcNow - _cachedStatusAt < maxAge) return _cachedStatus;
+            _cachedStatus = await GetStatusAsync();
+            _cachedStatusAt = DateTime.UtcNow;
+            return _cachedStatus;
+        } finally {
+            _statusCacheLock.Release();
+        }
+    }
+
     public async Task<FppStatus?> GetStatusAsync() {
         var response = await CallAsync("/api/fppd/status");
         if (response?.IsSuccessStatusCode != true) return null;

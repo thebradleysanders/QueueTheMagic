@@ -38,7 +38,12 @@ export function usePayment() {
 
     async function mountPaymentElement(clientSecret, domElement) {
         _stripe = await getStripe();
-        _elements = _stripe.elements({ clientSecret });
+        const dark = document.documentElement.classList.contains('dark');
+        const [r, g, b] = getComputedStyle(document.documentElement).getPropertyValue('--ac1').trim().split(/\s+/);
+        _elements = _stripe.elements({
+            clientSecret,
+            appearance: { theme: dark ? 'night' : 'stripe', variables: { colorPrimary: `rgb(${r},${g},${b})`, borderRadius: '12px' } }
+        });
         const el = _elements.create('payment');
         el.mount(domElement);
     }

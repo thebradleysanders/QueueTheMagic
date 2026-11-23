@@ -3,12 +3,15 @@
 
     import { computed, ref, watch } from 'vue';
 
+    import { useSeason } from '@/composables/useSeason';
+
     import { useSessionStore } from '@/stores/session';
     import { useShowStore } from '@/stores/show';
 
     import MarqueeText from '@/components/MarqueeText.vue';
 
     const showStore = useShowStore();
+    const { season } = useSeason();
     const sessionStore = useSessionStore();
     const np = computed(() => showStore.nowPlaying);
     const isPlaying = computed(() => np.value?.isPlaying);
@@ -78,35 +81,30 @@
     }
 
     const displayStars = computed(() => hovered.value || yourRating.value);
-
-    const cardStyle = computed(() => {
-        if (!isPlaying.value) return {};
-        return isDark.value ? { background: 'linear-gradient(135deg, #052e16 0%, #111827 60%, #111827 100%)' } : { background: 'linear-gradient(135deg, #dcfce7 0%, #ffffff 60%, #ffffff 100%)' };
-    });
 </script>
 
 <template>
-    <div class="relative overflow-hidden rounded-2xl border p-4 md:p-6" :class="isPlaying ? 'border-green-500/30' : 'border-white/30 bg-card shadow-[0_4px_24px_rgba(104,107,112,0.2)]'" :style="isPlaying ? cardStyle : {}">
+    <div class="relative overflow-hidden rounded-2xl border p-4 md:p-6" :class="isPlaying ? 'card-live card-live-bg shadow-ac1' : 'border-base bg-card shadow-[0_4px_24px_rgba(104,107,112,0.2)]'">
         <!-- Glow blob when playing -->
-        <div v-if="isPlaying" class="pointer-events-none absolute -top-8 -right-8 h-32 w-32 rounded-full bg-green-400 opacity-20 blur-2xl" />
+        <div v-if="isPlaying" class="bg-ac1 pointer-events-none absolute -top-8 -right-8 h-32 w-32 rounded-full opacity-20 blur-2xl" />
         <div v-else class="pointer-events-none absolute -bottom-8 -left-8 h-32 w-32 rounded-full bg-white/40 opacity-20 blur-2xl" />
 
         <!-- Header row -->
         <div class="relative mb-3 flex items-center justify-between">
             <div class="flex items-center gap-2">
-                <span class="text-xs tracking-widest uppercase font-bold" :class="isPlaying ? 'text-green-500' : 'text-hint'">
+                <span class="text-xs tracking-widest uppercase font-bold" :class="isPlaying ? 'text-ac1' : 'text-hint'">
                     <template v-if="isPlaying">
                         <font-awesome-icon :icon="['fas', 'music']" />
                         Now Playing
                     </template>
                     <template v-else>
-                        <font-awesome-icon :icon="['fas', 'snowflake']" />
+                        <font-awesome-icon :icon="['fas', season.icon]" />
                         Standby Mode
                     </template>
                 </span>
             </div>
             <div v-if="isPlaying" class="flex h-5 items-end gap-0.5">
-                <span v-for="i in 5" :key="i" class="w-1 rounded-full bg-green-500" :style="`height:${6 + i * 3}px; animation: bounce${i} 0.8s ease-in-out infinite alternate; animation-delay:${i * 0.12}s`" />
+                <span v-for="i in 5" :key="i" class="bg-ac1 w-1 rounded-full" :style="`height:${6 + i * 3}px; animation: bounce${i} 0.8s ease-in-out infinite alternate; animation-delay:${i * 0.12}s`" />
             </div>
         </div>
 
@@ -118,7 +116,7 @@
             <!-- Progress -->
             <div v-if="total > 0" class="mt-3">
                 <div class="bg-lift h-1.5 overflow-hidden rounded-full">
-                    <div class="h-full rounded-full transition-all duration-1000" style="background: linear-gradient(90deg, #22c55e, #4ade80)" :style="`width:${progress}%`" />
+                    <div class="h-full rounded-full transition-all duration-1000" :style="`width:${progress}%; background: linear-gradient(90deg, rgb(var(--ac1)), rgb(var(--ac3)))`" />
                 </div>
                 <div class="text-hint mt-1.5 flex justify-between text-xs">
                     <span>{{ fmt(np.secondsPlayed) }}</span>
@@ -139,8 +137,9 @@
                         @mouseenter="hovered = star"
                         @click="submitRating(star)"
                         :disabled="submitting"
+                        :aria-label="`Rate ${star} star${star > 1 ? 's' : ''}`"
                         class="flex-1 touch-manipulation py-2 text-center text-4xl leading-none transition-transform active:scale-90 disabled:opacity-50"
-                        :class="star <= displayStars ? 'opacity-100' : 'opacity-20'"
+                        :class="star <= displayStars ? 'text-ac3 opacity-100' : 'opacity-20'"
                         style="min-width: 44px"
                     >
                         {{ star <= displayStars ? '★' : '☆' }}
@@ -154,8 +153,8 @@
             <p class="text-hint text-sm" v-if="np?.state === 'PlayingDefault'">
                 Default playlist running
             </p>
-            <p v-else class="text-hint font-semibold text-sm">
-              Warming up the lights...
+            <p v-else class="text-hint text-sm font-semibold">
+                Warming up the lights… {{ season.emoji }}
             </p>
         </div>
     </div>

@@ -73,18 +73,18 @@
             <div v-if="!schedule.length" class="text-hint px-5 py-6 text-center text-sm">Schedule not yet configured, check back soon!</div>
 
             <div v-else>
-                <div v-for="entry in schedule" :key="entry.day" class="border-base flex items-center gap-4 border-b px-5 py-3.5 transition last:border-0" :class="entry.day === todayName && entry.enabled ? (isDark ? 'bg-green-500/5' : 'bg-green-50') : ''">
-                    <div class="h-8 w-1.5 shrink-0 rounded-full" :class="entry.day === todayName ? (entry.enabled ? 'bg-green-500' : 'bg-ghost') : 'bg-transparent'" />
+                <div v-for="entry in schedule" :key="entry.day" class="border-base flex items-center gap-4 border-b px-5 py-3.5 transition last:border-0" :class="entry.day === todayName && entry.enabled ? 'bg-ac1-soft' : ''">
+                    <div class="h-8 w-1.5 shrink-0 rounded-full" :class="entry.day === todayName ? (entry.enabled ? 'bg-ac1' : 'bg-ghost') : 'bg-transparent'" />
 
                     <div class="w-24 shrink-0">
                         <span class="text-sm font-semibold" :class="entry.day === todayName ? 'text-main' : 'text-sub'">
                             {{ entry.day }}
                         </span>
-                        <span v-if="entry.day === todayName" class="ml-2 text-[10px] font-bold tracking-wide text-green-500 uppercase">Today</span>
+                        <span v-if="entry.day === todayName" class="ml-2 text-ac1 text-[10px] font-bold tracking-wide uppercase">Today</span>
                     </div>
 
                     <div class="flex-1">
-                        <span v-if="entry.enabled && entry.start && entry.end" class="text-sm font-semibold" :class="entry.day === todayName ? 'text-green-600' : 'text-main'">{{ fmt12(entry.start) }} - {{ fmt12(entry.end) }}</span>
+                        <span v-if="entry.enabled && entry.start && entry.end" class="text-sm font-semibold" :class="entry.day === todayName ? 'text-ac1-strong' : 'text-main'">{{ fmt12(entry.start) }} - {{ fmt12(entry.end) }}</span>
                         <span v-else class="text-hint text-sm italic">Closed</span>
                     </div>
                 </div>
@@ -99,21 +99,21 @@
             </div>
             <div class="space-y-4 px-5 py-4">
                 <div class="flex gap-3">
-                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-green-500/30 bg-green-500/15 text-sm font-bold text-green-600">1</div>
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-ac1-soft bg-ac1-soft text-ac1-strong border text-sm font-bold">1</div>
                     <div>
                         <p class="text-main text-sm font-semibold">Pick a song</p>
                         <p class="text-hint mt-0.5 text-xs">Browse the playlist and pick your favorite holiday tune.</p>
                     </div>
                 </div>
                 <div class="flex gap-3">
-                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-green-500/30 bg-green-500/15 text-sm font-bold text-green-600">2</div>
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-ac1-soft bg-ac1-soft text-ac1-strong border text-sm font-bold">2</div>
                     <div>
                         <p class="text-main text-sm font-semibold">Make a small donation</p>
                         <p class="text-hint mt-0.5 text-xs">Just ${{ config.songRequestCost }} adds your song to the queue. 100% goes toward the show.</p>
                     </div>
                 </div>
                 <div class="flex gap-3">
-                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-green-500/30 bg-green-500/15 text-sm font-bold text-green-600">3</div>
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-ac1-soft bg-ac1-soft text-ac1-strong border text-sm font-bold">3</div>
                     <div>
                         <p class="text-main text-sm font-semibold">Watch the lights dance</p>
                         <p class="text-hint mt-0.5 text-xs">Your song plays on the display synced to the music. Rate it when it's done!</p>

@@ -1,8 +1,30 @@
-import '@fortawesome/fontawesome-free/css/all.min.css';
 import { library } from '@fortawesome/fontawesome-svg-core';
-import { fab } from '@fortawesome/free-brands-svg-icons';
-import { far } from '@fortawesome/free-regular-svg-icons';
-import { fas } from '@fortawesome/free-solid-svg-icons';
+import { faGithub } from '@fortawesome/free-brands-svg-icons';
+import {
+    faCalendarDays,
+    faChartBar,
+    faChevronLeft,
+    faChevronRight,
+    faCircleInfo,
+    faClover,
+    faGear,
+    faGhost,
+    faGift,
+    faHeart,
+    faHouse,
+    faLeaf,
+    faLightbulb,
+    faListOl,
+    faMusic,
+    faRotate,
+    faSeedling,
+    faSnowflake,
+    faStar,
+    faTriangleExclamation,
+    faUserGear,
+    faWandMagicSparkles,
+    faXmark
+} from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import Aura from '@primevue/themes/aura';
 import { createPinia } from 'pinia';
@@ -15,7 +37,13 @@ import App from './App.vue';
 import './assets/main.css';
 import router from './router';
 
-library.add(far, fas, fab);
+// Register only the icons we use (the full set adds ~1.5 MB to the bundle).
+library.add(
+    faGithub,
+    faCalendarDays, faChartBar, faChevronLeft, faChevronRight, faCircleInfo, faClover, faGear, faGhost, faGift,
+    faHeart, faHouse, faLeaf, faLightbulb, faListOl, faMusic, faRotate, faSeedling, faSnowflake, faStar,
+    faTriangleExclamation, faUserGear, faWandMagicSparkles, faXmark
+);
 
 const app = createApp(App);
 

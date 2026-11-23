@@ -45,7 +45,7 @@
                         <MarqueeText :text="song.title" class="text-main text-sm font-medium" />
                         <p class="text-hint text-xs" v-if="song.artist">{{ song.artist }}</p>
                     </div>
-                    <span v-if="song.totalRatings > 0" class="mx-2 flex shrink-0 items-center gap-0.5 text-xs font-semibold text-yellow-500">★ {{ song.averageRating }}</span>
+                    <span v-if="song.totalRatings > 0" class="mx-2 flex shrink-0 items-center gap-0.5 text-ac3 text-xs font-semibold">★ {{ song.averageRating }}</span>
                     <span class="text-ghost ml-2 text-xs">{{ formatDuration(song.durationSeconds) }}</span>
                 </div>
             </div>

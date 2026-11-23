@@ -21,7 +21,7 @@ public class ShowController(
         if (config == null) return NotFound();
 
         var diag = queueManager.GetDiagnostics();
-        var fppStatus = await fppService.GetStatusAsync();
+        var fppStatus = await fppService.GetStatusCachedAsync(TimeSpan.FromSeconds(2));
 
         var played = int.TryParse(fppStatus?.seconds_played, out var sp) ? sp : 0;
         var remaining = int.TryParse(fppStatus?.seconds_remaining, out var sr) ? sr : 0;

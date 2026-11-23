@@ -22,6 +22,9 @@ public class QueueController(
 
     [HttpPost]
     public async Task<IActionResult> AddToQueue([FromBody] AddToQueueRequest request) {
+        if (string.IsNullOrWhiteSpace(request.SessionToken) || request.SessionToken.Length > 64)
+            return BadRequest(new { error = "Invalid session." });
+
         await using var db = await dbFactory.CreateDbContextAsync();
         var config = await db.ShowConfigs.FindAsync(1);
         if (config != null && !config.IsSeasonActive)
@@ -29,31 +32,52 @@ public class QueueController(
         if (config != null && !ScheduleHelper.IsOpen(config.ShowScheduleJson))
             return BadRequest(new { error = "The show is currently closed. Please come back during show hours." });
 
-        if (!await paymentService.VerifyIntentAsync(request.PaymentIntentId))
-            return BadRequest(new { error = "Payment not verified." });
+        // Hold the lock across verify + redeem so one payment can only ever buy one song.
+        await paymentService.RedeemLock.WaitAsync();
+        try {
+            var verified = await paymentService.VerifyIntentAsync(
+                request.PaymentIntentId, "song", config?.SongRequestCost ?? 1m,
+                new Dictionary<string, string> { ["songId"] = request.SongId.ToString() });
+            if (!verified.Ok) return BadRequest(new { error = verified.Error });
 
-        var (item, error) = await queueService.AddToQueueAsync(request.SongId, request.PaymentIntentId, request.SessionToken);
-        if (error != null) return BadRequest(new { error });
+            var (item, error) = await queueService.AddToQueueAsync(request.SongId, request.PaymentIntentId, request.SessionToken);
+            if (error != null) return BadRequest(new { error });
 
-        queueTrigger.TriggerImmediateCheck();
-        var queue = await queueService.GetQueueAsync();
-        await hub.Clients.All.SendAsync("QueueUpdated", queue);
+            queueTrigger.TriggerImmediateCheck();
+            var queue = await queueService.GetQueueAsync();
+            await hub.Clients.All.SendAsync("QueueUpdated", queue);
 
-        return Ok(new { queueItemId = item!.Id });
+            return Ok(new { queueItemId = item!.Id });
+        } finally {
+            paymentService.RedeemLock.Release();
+        }
     }
 
     [HttpPut("{id}/bump")]
     public async Task<IActionResult> Bump(int id, [FromBody] BumpQueueRequest request) {
-        if (!await paymentService.VerifyIntentAsync(request.PaymentIntentId))
-            return BadRequest(new { error = "Payment not verified." });
+        if (string.IsNullOrWhiteSpace(request.SessionToken) || request.SessionToken.Length > 64)
+            return BadRequest(new { error = "Invalid session." });
 
-        var (success, error) = await queueService.BumpAsync(id, request.PaymentIntentId, request.SessionToken);
-        if (!success) return BadRequest(new { error });
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var config = await db.ShowConfigs.FindAsync(1);
 
-        queueTrigger.TriggerImmediateCheck();
-        var queue = await queueService.GetQueueAsync();
-        await hub.Clients.All.SendAsync("QueueUpdated", queue);
+        await paymentService.RedeemLock.WaitAsync();
+        try {
+            var verified = await paymentService.VerifyIntentAsync(
+                request.PaymentIntentId, "bump", config?.BumpCost ?? 1m,
+                new Dictionary<string, string> { ["queueItemId"] = id.ToString() });
+            if (!verified.Ok) return BadRequest(new { error = verified.Error });
 
-        return Ok(new { success = true });
+            var (success, error) = await queueService.BumpAsync(id, request.PaymentIntentId, request.SessionToken);
+            if (!success) return BadRequest(new { error });
+
+            queueTrigger.TriggerImmediateCheck();
+            var queue = await queueService.GetQueueAsync();
+            await hub.Clients.All.SendAsync("QueueUpdated", queue);
+
+            return Ok(new { success = true });
+        } finally {
+            paymentService.RedeemLock.Release();
+        }
     }
 }

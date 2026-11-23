@@ -1,9 +1,10 @@
 <script setup>
     import axios from 'axios';
 
-    import { computed, nextTick, onMounted, ref } from 'vue';
+    import { nextTick, onMounted, onUnmounted, ref } from 'vue';
 
     import { usePayment } from '@/composables/usePayment';
+    import { useSeason } from '@/composables/useSeason';
 
     import { useSessionStore } from '@/stores/session';
     import { useShowStore } from '@/stores/show';
@@ -14,7 +15,7 @@
     const showStore = useShowStore();
     const sessionStore = useSessionStore();
     const { createIntent, mountPaymentElement, confirmPayment } = usePayment();
-    const isDark = computed(() => showStore.config.theme !== 'light');
+    const { season } = useSeason();
 
     const playlists = ref([]);
     const selectedPlaylist = ref(null);
@@ -24,10 +25,20 @@
     const loading = ref(false);
     const paymentElementRef = ref(null);
 
+    function onKey(e) {
+        if (e.key === 'Escape' && !loading.value) emit('close');
+    }
+
     onMounted(async () => {
-        const { data } = await axios.get('/api/songs');
-        playlists.value = data;
+        window.addEventListener('keydown', onKey);
+        try {
+            const { data } = await axios.get('/api/songs');
+            playlists.value = data;
+        } catch {
+            errorMsg.value = 'Could not load the song list. Please try again.';
+        }
     });
+    onUnmounted(() => window.removeEventListener('keydown', onKey));
 
     const isDev = import.meta.env.DEV;
 
@@ -89,12 +100,12 @@
 </script>
 
 <template>
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" @click.self="emit('close')">
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-label="Request a song" @click.self="emit('close')">
         <div class="bg-card border-base w-full max-w-lg overflow-hidden rounded-2xl border md:max-w-2xl">
             <!-- Header -->
             <div class="border-base flex items-center justify-between border-b px-5 py-4">
                 <div class="flex items-center gap-2">
-                    <button v-if="selectedPlaylist && step === 'select'" @click="goBack" class="text-hint hover:text-main -ml-1 p-1">
+                    <button v-if="selectedPlaylist && step === 'select'" @click="goBack" aria-label="Back" class="text-hint hover:text-main -ml-1 p-1">
                         <font-awesome-icon :icon="['fas', 'chevron-left']" />
                     </button>
                     <div>
@@ -105,13 +116,14 @@
                         <p v-if="!selectedPlaylist" class="text-hint text-xs">${{ showStore.config.songRequestCost }} to request</p>
                     </div>
                 </div>
-                <button @click="emit('close')" class="text-hint hover:text-main flex h-8 w-8 items-center justify-center text-xl">
+                <button @click="emit('close')" aria-label="Close" class="text-hint hover:text-main flex h-8 w-8 items-center justify-center text-xl">
                     <font-awesome-icon :icon="['fas', 'xmark']" />
                 </button>
             </div>
 
             <!-- Step: select playlist -->
             <div v-if="step === 'select' && !selectedPlaylist" class="max-h-[65vh] space-y-2 overflow-y-auto p-4">
+                <div v-if="errorMsg" class="mb-1 rounded-xl bg-red-500/20 p-3 text-sm text-red-500">{{ errorMsg }}</div>
                 <button v-for="p in playlists" :key="p.id" @click="pickPlaylist(p)" class="bg-lift hover:bg-inset border-base hover:border-strong flex w-full items-center gap-3 rounded-2xl border px-4 py-4 text-left transition active:scale-98">
                     <font-awesome-icon v-if="p.songs.length === 0" :icon="['fas', 'exclamation-triangle']" class="text-yellow-500" />
                     <font-awesome-icon v-else :icon="['fas', 'music']" />
@@ -134,13 +146,13 @@
                         :key="song.id"
                         @click="selectedSong = song"
                         class="w-full rounded-xl border px-4 py-3 text-left text-sm transition active:scale-98"
-                        :class="selectedSong?.id === song.id ? 'text-main border-green-500/40 bg-green-500/15' : 'bg-lift border-base text-sub hover:bg-inset'"
+                        :class="selectedSong?.id === song.id ? 'text-main border-ac1-soft bg-ac1-soft' : 'bg-lift border-base text-sub hover:bg-inset'"
                     >
                         <div class="flex items-center gap-2">
-                            <span v-if="selectedSong?.id === song.id" class="shrink-0 text-base text-green-500">✓</span>
+                            <span v-if="selectedSong?.id === song.id" class="text-ac1 shrink-0 text-base">✓</span>
                             <span v-else class="text-hint shrink-0 text-base">○</span>
                             <MarqueeText :text="song.title" class="text-main flex-1 font-medium" />
-                            <span v-if="song.totalRatings > 0" class="flex shrink-0 items-center gap-0.5 text-xs font-semibold text-yellow-500">★ {{ song.averageRating }}</span>
+                            <span v-if="song.totalRatings > 0" class="flex shrink-0 items-center gap-0.5 text-ac3 text-xs font-semibold">★ {{ song.averageRating }}</span>
                             <span v-if="song.durationSeconds" class="text-hint shrink-0 text-xs">{{ Math.floor(song.durationSeconds / 60) }}:{{ String(song.durationSeconds % 60).padStart(2, '0') }}</span>
                         </div>
                         <p v-if="song.artist" class="text-hint mt-0.5 ml-6 truncate text-xs">{{ song.artist }}</p>
@@ -152,7 +164,7 @@
             <div v-if="step === 'payment'" class="p-5">
                 <div v-if="errorMsg" class="mb-3 rounded-xl bg-red-500/20 p-3 text-sm text-red-400">{{ errorMsg }}</div>
                 <div ref="paymentElementRef"></div>
-                <button @click="submitPayment" :disabled="loading" class="mt-4 w-full rounded-2xl py-4 text-base font-bold text-white transition active:scale-95 disabled:opacity-40" style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%)">
+                <button @click="submitPayment" :disabled="loading" class="btn-ac mt-4 w-full rounded-2xl py-4 text-base font-bold transition active:scale-95 disabled:opacity-40">
                     {{ loading ? '⏳ Processing...' : `🎵 Pay $${showStore.config.songRequestCost}` }}
                 </button>
             </div>
@@ -169,12 +181,12 @@
                 <p class="text-main text-xl font-bold">You're in the queue!</p>
                 <p class="text-hint mt-1 mb-1 text-sm">{{ selectedSong?.title }}</p>
                 <p class="text-ghost text-xs">Watch the queue to see when you're up next</p>
-                <button @click="emit('close')" class="mt-5 rounded-2xl px-8 py-3 text-sm font-semibold text-white transition active:scale-95" style="background: linear-gradient(135deg, #16a34a, #15803d)">Awesome! 🎄</button>
+                <button @click="emit('close')" class="btn-ac mt-5 rounded-2xl px-8 py-3 text-sm font-semibold transition active:scale-95">Awesome! {{ season.emoji }}</button>
             </div>
 
             <!-- Pay button -->
             <div v-if="step === 'select' && selectedPlaylist" class="px-4 pt-2 pb-5">
-                <button @click="pay" :disabled="!selectedSong || loading" class="w-full rounded-2xl py-4 text-base font-bold text-white transition active:scale-95 disabled:opacity-40" style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%)">
+                <button @click="pay" :disabled="!selectedSong || loading" class="btn-ac w-full rounded-2xl py-4 text-base font-bold transition active:scale-95 disabled:opacity-40">
                     {{ loading ? '⏳ Processing...' : selectedSong ? (isDev ? `⚡ Queue "${selectedSong.title}" (dev)` : `🎵 Queue Song — $${showStore.config.songRequestCost}`) : 'Select a song above' }}
                 </button>
             </div>

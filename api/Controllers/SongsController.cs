@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using XlightsQueue.Data;
 using XlightsQueue.DTOs;
@@ -39,12 +40,17 @@ public class SongsController(IDbContextFactory<AppDbContext> dbFactory) : Contro
         return Ok(new RatingDto(Math.Round(avg, 1), ratings.Count, yours));
     }
 
+    [EnableRateLimiting("rating")]
     [HttpPost("{id}/rate")]
     public async Task<IActionResult> Rate(int id, [FromBody] RateSongRequest request) {
         if (request.Rating < 1 || request.Rating > 5)
             return BadRequest(new { error = "Rating must be 1–5." });
+        if (string.IsNullOrWhiteSpace(request.SessionToken) || request.SessionToken.Length > 64)
+            return BadRequest(new { error = "Invalid session." });
 
         await using var db = await dbFactory.CreateDbContextAsync();
+        if (!await db.Songs.AnyAsync(s => s.Id == id))
+            return NotFound();
         var existing = await db.SongRatings
             .FirstOrDefaultAsync(r => r.SongId == id && r.SessionToken == request.SessionToken);
 

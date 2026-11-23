@@ -1,9 +1,12 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.IdentityModel.Tokens;
 using Stripe;
 using System.Text;
+using System.Threading.RateLimiting;
 using XlightsQueue.Data;
 using XlightsQueue.Hubs;
 using XlightsQueue.Services;
@@ -33,8 +36,46 @@ builder.Services.AddCors(options => {
             .AllowCredentials());
 });
 
+// ── Refuse to start in production with missing / default / weak secrets ──────────
+const string DefaultJwtSecret = "qtm-default-secret-key-change-this-in-production";
+var jwtSecret = builder.Configuration["Jwt:Secret"] ?? DefaultJwtSecret;
+if (!builder.Environment.IsDevelopment()) {
+    var adminPassword = builder.Configuration["AdminPassword"];
+    string[] weakPasswords = ["changeme", "your-secure-password", "password", "admin"];
+    if (string.IsNullOrWhiteSpace(adminPassword) || adminPassword.Length < 8
+        || weakPasswords.Contains(adminPassword, StringComparer.OrdinalIgnoreCase))
+        throw new InvalidOperationException(
+            "AdminPassword is missing, too short (min 8) or a well-known default. Set a strong AdminPassword before going live.");
+
+    if (string.IsNullOrWhiteSpace(jwtSecret) || jwtSecret.Length < 32
+        || jwtSecret == DefaultJwtSecret
+        || jwtSecret.StartsWith("change-this", StringComparison.OrdinalIgnoreCase))
+        throw new InvalidOperationException(
+            "Jwt__Secret is missing, shorter than 32 characters or a placeholder. Generate one with: openssl rand -base64 48");
+}
+
+// ── Rate limiting (per client IP) ────────────────────────────────────────────────
+builder.Services.AddRateLimiter(options => {
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    static RateLimitPartition<string> PerIp(HttpContext ctx, int permits, TimeSpan window) =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions { PermitLimit = permits, Window = window, QueueLimit = 0 });
+
+    // Brute-force protection for the admin password
+    options.AddPolicy("login", ctx => PerIp(ctx, 8, TimeSpan.FromMinutes(1)));
+    // Stops card-testing / intent spam against Stripe
+    options.AddPolicy("payment", ctx => PerIp(ctx, 15, TimeSpan.FromMinutes(1)));
+    // Ballot-stuffing protection for song ratings
+    options.AddPolicy("rating", ctx => PerIp(ctx, 30, TimeSpan.FromMinutes(1)));
+});
+
+// nginx (127.0.0.1) sits in front of Kestrel and sets X-Forwarded-For.
+builder.Services.Configure<ForwardedHeadersOptions>(o => {
+    o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+});
+
 // JWT Auth
-var jwtSecret = builder.Configuration["Jwt:Secret"] ?? "qtm-default-secret-key-change-this-in-production";
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options => {
         options.TokenValidationParameters = new TokenValidationParameters {
@@ -81,7 +122,9 @@ using (var scope = app.Services.CreateScope()) {
     db.Database.Migrate();
 }
 
+app.UseForwardedHeaders();
 app.UseCors();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

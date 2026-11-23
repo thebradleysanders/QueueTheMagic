@@ -1,25 +1,17 @@
 <script setup>
-    import axios from 'axios';
-
     import { computed, ref } from 'vue';
 
-    import { usePayment } from '@/composables/usePayment';
-
-    import { useSessionStore } from '@/stores/session';
     import { useShowStore } from '@/stores/show';
 
+    import BumpModal from '@/components/BumpModal.vue';
     import DonateModal from '@/components/DonateModal.vue';
     import MarqueeText from '@/components/MarqueeText.vue';
     import NowPlayingCard from '@/components/NowPlayingCard.vue';
     import SongRequestModal from '@/components/SongRequestModal.vue';
 
     const showStore = useShowStore();
-    const sessionStore = useSessionStore();
-    const { createIntent, confirmPayment } = usePayment();
     const showModal = ref(false);
     const showDonate = ref(false);
-    const bumpingId = ref(null);
-    const isDev = import.meta.env.DEV;
     const isDark = computed(() => showStore.config.theme !== 'light');
     const isOpen = computed(() => showStore.config.isOpen);
     const queueDepth = computed(() => showStore.queue.filter(q => q.status === 'Pending').length);
@@ -47,27 +39,9 @@
         return `~${Math.round(secs / 60)} min`;
     }
 
-    async function boost(item) {
-        if (bumpingId.value) return;
-        bumpingId.value = item.id;
-        try {
-            let paymentIntentId;
-            if (isDev) {
-                paymentIntentId = 'dev_test';
-            } else {
-                const clientSecret = await createIntent('bump', item.id);
-                paymentIntentId = await confirmPayment(clientSecret, window.location.href);
-            }
-            await axios.put(`/api/queue/${item.id}/bump`, {
-                paymentIntentId,
-                sessionToken: sessionStore.sessionToken
-            });
-            await showStore.fetchQueue();
-        } catch (e) {
-            alert(e.message || 'Boost failed');
-        } finally {
-            bumpingId.value = null;
-        }
+    const bumpItem = ref(null);
+    function boost(item) {
+        bumpItem.value = item;
     }
 
     const radioStyle = computed(() =>
@@ -129,47 +103,21 @@
 
         <!-- CTAs -->
         <div class="flex gap-3">
-            <button
-                v-if="isOpen"
-                @click="showModal = true"
-                class="relative flex-1 overflow-hidden rounded-2xl transition active:scale-95"
-                :class="
-                    isDark
-                        ? 'border border-green-400/35 bg-gradient-to-br from-green-950 via-green-900 to-green-800 shadow-[0_4px_24px_rgba(34,197,94,0.2)]'
-                        : 'border border-green-400/40 bg-gradient-to-br from-green-50 via-green-100 to-green-50 shadow-[0_2px_12px_rgba(34,197,94,0.15)]'
-                "
-            >
-                <div class="pointer-events-none absolute -top-4 -right-4 h-20 w-20 rounded-full" style="background: radial-gradient(circle, rgba(34, 197, 94, 0.2) 0%, transparent 70%)" />
+            <button v-if="isOpen" @click="showModal = true" class="cta cta-1 flex-1">
+                <div class="cta-glow" />
                 <div class="relative flex flex-col items-center gap-1 px-3 py-4">
-                    <span class="text-2xl leading-none text-green-300">
-                        <font-awesome-icon :icon="['fas', 'music']" />
-                    </span>
-                    <span class="text-sm font-black tracking-wide" :class="isDark ? 'text-white/90' : 'text-green-900'">Request a Song</span>
-                    <span class="rounded-full px-2.5 py-0.5 text-xs font-bold" :style="isDark ? 'background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3); color: #86efac' : 'background: rgba(34,197,94,0.2); border: 1px solid rgba(34,197,94,0.4); color: #15803d'">
-                        ${{ showStore.config.songRequestCost }}
-                    </span>
+                    <span class="cta-icon text-2xl leading-none"><font-awesome-icon :icon="['fas', 'music']" /></span>
+                    <span class="cta-title text-sm font-black tracking-wide">Request a Song</span>
+                    <span class="cta-chip rounded-full px-2.5 py-0.5 text-xs font-bold">${{ showStore.config.songRequestCost }}</span>
                 </div>
             </button>
 
-            <button
-                @click="showDonate = true"
-                class="relative flex-1 overflow-hidden rounded-2xl transition active:scale-95"
-                :class="
-                    isDark ? 'border border-pink-400/35 bg-gradient-to-br from-pink-950 via-pink-900 to-pink-800 shadow-[0_4px_24px_rgba(157,1,74,0.4)]' : 'border border-pink-400/40 bg-gradient-to-br from-pink-50 via-pink-100 to-pink-50 shadow-[0_2px_12px_rgba(34,197,94,0.15)]'
-                "
-            >
-                <div class="pointer-events-none absolute -top-4 -right-4 h-20 w-20 rounded-full" style="background: radial-gradient(circle, rgba(236, 72, 153, 0.2) 0%, transparent 70%)" />
+            <button @click="showDonate = true" class="cta cta-2 flex-1">
+                <div class="cta-glow" />
                 <div class="relative flex flex-col items-center gap-1 px-3 py-4">
-                    <span class="text-2xl leading-none text-pink-300">
-                        <font-awesome-icon :icon="['fas', 'gift']" />
-                    </span>
-                    <span class="text-sm font-black tracking-wide" :class="isDark ? 'text-white/90' : 'text-pink-900'">Donate</span>
-                    <span
-                        class="rounded-full px-2.5 py-0.5 text-xs font-bold"
-                        :style="isDark ? 'background: rgba(236,72,153,0.15); border: 1px solid rgba(236,72,153,0.3); color: #f9a8d4' : 'background: rgba(236,72,153,0.2); border: 1px solid rgba(236,72,153,0.4); color: #be185d'"
-                    >
-                        ${{ showStore.config.donateCost }}+
-                    </span>
+                    <span class="cta-icon text-2xl leading-none"><font-awesome-icon :icon="['fas', 'gift']" /></span>
+                    <span class="cta-title text-sm font-black tracking-wide">Donate</span>
+                    <span class="cta-chip rounded-full px-2.5 py-0.5 text-xs font-bold">${{ showStore.config.donateCost }}+</span>
                 </div>
             </button>
         </div>
@@ -178,32 +126,27 @@
         <div v-if="showStore.queue.length > 0">
             <p class="text-hint mb-3 px-1 text-xs tracking-widest uppercase">Up Next</p>
             <div class="space-y-2">
-                <div v-for="(item, i) in showStore.queue.slice(0, 3)" :key="item.id" class="overflow-hidden rounded-xl border" :class="item.status === 'Playing' ? 'border-green-500/30' : i === 0 ? 'border-yellow-500/20' : 'border-base bg-card'">
-                    <div
-                        class="flex items-center gap-3 px-3 py-2.5"
-                        :style="item.status === 'Playing' ? (isDark ? 'background: rgba(5,46,22,0.5)' : 'background: rgba(220,252,231,0.6)') : i === 0 ? (isDark ? 'background: rgba(66,32,6,0.3)' : 'background: rgba(254,249,195,0.6)') : ''"
-                    >
+                <div v-for="(item, i) in showStore.queue.slice(0, 3)" :key="item.id" class="overflow-hidden rounded-xl border" :class="item.status === 'Playing' ? 'card-live' : i === 0 ? 'border-ac3-soft' : 'border-base bg-card'">
+                    <div class="flex items-center gap-3 px-3 py-2.5" :class="item.status === 'Playing' ? 'row-live' : i === 0 ? 'row-next' : ''">
                         <span class="shrink-0 text-lg">{{ item.status === 'Playing' ? '▶️' : i === 0 ? '1️⃣' : i === 1 ? '2️⃣' : '3️⃣' }}</span>
                         <div class="min-w-0 flex-1">
                             <MarqueeText :text="item.title" class="text-main text-sm font-medium" />
                             <div class="mt-0.5 flex items-center gap-2">
                                 <p v-if="item.durationSeconds" class="text-hint text-xs">{{ formatDuration(item.durationSeconds) }}</p>
-                                <p v-if="item.status === 'Pending' && estimatedWaitSeconds(i) > 0" class="text-xs" :class="i === 0 ? 'font-medium text-yellow-500' : 'text-hint'">⏱ {{ formatWait(estimatedWaitSeconds(i)) }}</p>
+                                <p v-if="item.status === 'Pending' && estimatedWaitSeconds(i) > 0" class="text-xs" :class="i === 0 ? 'text-ac3 font-medium' : 'text-hint'">⏱ {{ formatWait(estimatedWaitSeconds(i)) }}</p>
                             </div>
                         </div>
-                        <span v-if="item.status === 'Playing'" class="shrink-0 animate-pulse text-xs font-semibold text-green-500">LIVE</span>
+                        <span v-if="item.status === 'Playing'" class="text-ac1 shrink-0 animate-pulse text-xs font-semibold">LIVE</span>
                         <button
                             v-if="item.status === 'Pending' && i !== showStore.queue.findIndex(q => q.status === 'Pending')"
                             @click="boost(item)"
-                            :disabled="bumpingId === item.id"
-                            class="shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition active:scale-95 disabled:opacity-50"
-                            style="background: linear-gradient(135deg, rgba(234, 179, 8, 0.2), rgba(234, 179, 8, 0.1)); color: #d97706; border: 1px solid rgba(234, 179, 8, 0.3)"
+                            class="chip-boost shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition active:scale-95"
                         >
-                            {{ bumpingId === item.id ? '⏳' : `🚀 $${showStore.config.bumpCost}` }}
+                            {{ `🚀 $${showStore.config.bumpCost}` }}
                         </button>
                     </div>
-                    <div v-if="item.status === 'Pending' && i === 0" class="border-t border-yellow-500/20 bg-yellow-500/10 px-3 py-1">
-                        <span class="animate-pulse text-xs font-bold text-yellow-500">⚡ YOU'RE UP NEXT!</span>
+                    <div v-if="item.status === 'Pending' && i === 0" class="border-ac3-soft bg-ac3-soft border-t px-3 py-1">
+                        <span class="text-ac3 animate-pulse text-xs font-bold">⚡ YOU'RE UP NEXT!</span>
                     </div>
                 </div>
             </div>
@@ -212,6 +155,7 @@
 
     <SongRequestModal v-if="showModal" @close="showModal = false" />
     <DonateModal v-if="showDonate" @close="showDonate = false" />
+    <BumpModal v-if="bumpItem" :item="bumpItem" @close="bumpItem = null" />
 </template>
 
 <style scoped>

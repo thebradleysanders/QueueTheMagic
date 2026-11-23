@@ -35,7 +35,7 @@ I often get asked
     - ```donation``` - When a 'Just because' donation occurs.
     - ```nowplaying``` - When now playing changes.
     - ```songqueued``` - When someone donates to queue a song.
-- Light/dark theme
+- Light/dark theme plus **automatic seasonal themes** (Christmas, Halloween, Valentine's, St. Patrick's, Spring, 4th of July, Autumn, Winter) with a matching string of lights and falling decorations
 - Mobile-first responsive design
 
 ---
@@ -119,11 +119,43 @@ All configuration is passed via environment variables, no config files to edit.
 |---|---|---|
 | `Stripe__SecretKey` | — | Stripe secret key (server-side) |
 | `Stripe__PublishableKey` | — | Stripe publishable key (returned to frontend via API) |
-| `AdminPassword` | — | Password for `/admin` login |
-| `Jwt__Secret` | — | Token signing secret, min 32 characters, keep private |
+| `AdminPassword` | — | Password for `/admin` login. **Required**, min 8 characters |
+| `Jwt__Secret` | — | Token signing secret. **Required**, min 32 characters, keep private (`openssl rand -base64 48`) |
 | `AllowedOrigins` | `https://localhost` | CORS origin — your domain or IP |
 
+> In production the app **refuses to start** if `AdminPassword` or `Jwt__Secret` is missing, too short, or a well-known placeholder (`changeme`, `change-this…`). This is deliberate, so a live site can never run with default credentials.
+
 > FPP address and all other show settings are configured via the admin dashboard and stored in the database.
+
+---
+
+## Seasonal Themes
+
+The site picks its theme from the calendar, no configuration needed:
+
+| Dates | Theme |
+|---|---|
+| Oct 1 – Nov 3 | 🎃 Halloween |
+| Nov 4 – Nov 14 | 🍁 Autumn |
+| Nov 15 – Dec 31 | 🎄 Christmas |
+| Jan 1 – Jan 31 | ⛄ Winter |
+| Feb 1 – Feb 14 | 💝 Valentine's Day |
+| Mar 1 – Mar 17 | 🍀 St. Patrick's Day |
+| Mar 18 – May 31 | 🌷 Spring |
+| Jun 25 – Jul 6 | 🎆 4th of July |
+| Any other time | ✨ Default |
+
+Preview any theme by adding `?season=` to the URL, e.g. `https://your-site/?season=halloween`. Dates and colours live in `web/src/composables/useSeason.js` and `web/src/assets/main.css`.
+
+---
+
+## Security Notes
+
+- Every payment is verified server-side with Stripe: it must have succeeded, match the type (song / boost / donation) and the specific song, cover the configured price, and can only be redeemed **once**. Donation amounts come from Stripe, never from the browser.
+- Admin login, payment-intent creation and song rating are rate limited per client IP. nginx only trusts `X-Forwarded-For` from private-network proxies.
+- nginx sends a Content-Security-Policy (own assets + Stripe only), `nosniff`, frame and referrer protections. If you add third-party scripts or fonts, extend the CSP in `docker/nginx.conf.template`.
+- Terminate HTTPS at your reverse proxy and enable HSTS there.
+- Admin tokens last 8 hours. Rotate `Jwt__Secret` to sign everyone out.
 
 ---
 

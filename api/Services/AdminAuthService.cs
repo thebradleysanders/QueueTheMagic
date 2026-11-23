@@ -1,6 +1,7 @@
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace XlightsQueue.Services;
@@ -10,8 +11,13 @@ public class AdminAuthService(IConfiguration configuration) {
     private readonly string _jwtSecret = configuration["Jwt:Secret"] ?? "qtm-default-secret-key-change-this-in-production";
     private readonly string _issuer = configuration["Jwt:Issuer"] ?? "QueueTheMagic";
 
-    public bool ValidatePassword(string password) =>
-        !string.IsNullOrEmpty(password) && password == _password;
+    // Compare hashes with a constant-time check so response timing leaks nothing about the password.
+    public bool ValidatePassword(string? password) {
+        if (string.IsNullOrEmpty(password) || string.IsNullOrEmpty(_password)) return false;
+        var a = SHA256.HashData(Encoding.UTF8.GetBytes(password));
+        var b = SHA256.HashData(Encoding.UTF8.GetBytes(_password));
+        return CryptographicOperations.FixedTimeEquals(a, b);
+    }
 
     public string GenerateToken() {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSecret));

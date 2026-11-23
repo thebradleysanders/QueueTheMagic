@@ -6,6 +6,7 @@ api/*.db
 api/*.db-shm
 api/*.db-wal
 api/.vs/
+.vs/
 
 # ── Node ─────────────────────────────────────────────
 web/node_modules/
