@@ -20,7 +20,7 @@ public class ListenController(AudioRelayService relay, IDbContextFactory<AppDbCo
 
     [EnableRateLimiting("listen")]
     [Route("ws")]
-    public async Task Stream() {
+    public async Task Stream([FromQuery(Name = "t")] string? deviceToken) {
         if (!HttpContext.WebSockets.IsWebSocketRequest) {
             HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
             return;
@@ -30,8 +30,10 @@ public class ListenController(AudioRelayService relay, IDbContextFactory<AppDbCo
             HttpContext.Response.StatusCode = StatusCodes.Status404NotFound;
             return;
         }
+        // Anonymous per-browser id, used only to count unique listeners.
+        var token = string.IsNullOrWhiteSpace(deviceToken) || deviceToken.Length > 64 ? "unknown" : deviceToken;
         using var socket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-        await relay.ServeAsync(socket, Math.Max(1, config.ListenMaxListeners), HttpContext.RequestAborted);
+        await relay.ServeAsync(socket, token, Math.Max(1, config.ListenMaxListeners), HttpContext.RequestAborted);
     }
 
     private async Task<Models.ShowConfig?> GetConfigAsync() {

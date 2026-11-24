@@ -61,6 +61,12 @@ export const useAdminStore = defineStore('admin', () => {
         return data;
     }
 
+    async function resetStats() {
+        const { data } = await axios.post('/api/admin/stats/reset', {}, { headers: authHeaders() });
+        await fetchReports();
+        return data;
+    }
+
     async function fetchReports() {
         const { data } = await axios.get('/api/admin/reports', { headers: authHeaders() });
         reports.value = data;
@@ -135,6 +141,7 @@ export const useAdminStore = defineStore('admin', () => {
         fetchConfig,
         saveConfig,
         setShowMode,
+        resetStats,
         fetchListenStatus,
         supporters,
         fetchSupporters,

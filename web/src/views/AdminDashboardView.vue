@@ -54,6 +54,8 @@
         saving.value = true;
         saveMsg.value = null;
         try {
+            // Empty number boxes come through as '' but the server wants null
+            for (const k of ['latitude', 'longitude']) if (editConfig.value[k] === '') editConfig.value[k] = null;
             await admin.saveConfig(editConfig.value);
             saveMsg.value = 'Saved!';
             setTimeout(() => (saveMsg.value = null), 2000);
@@ -235,9 +237,41 @@
                 borderColor: '#f472b6',
                 backgroundColor: 'rgba(244,114,182,0.1)',
                 tension: 0.3
+            },
+            {
+                type: 'line',
+                label: 'Listen taps',
+                data: admin.reports?.dailyStats.map(d => d.listens) ?? [],
+                borderColor: '#4ade80',
+                backgroundColor: 'rgba(74,222,128,0.1)',
+                tension: 0.3
             }
         ]
     }));
+
+    function fmtDuration(secs) {
+        if (!secs) return '0m';
+        const h = Math.floor(secs / 3600);
+        const m = Math.floor((secs % 3600) / 60);
+        return h > 0 ? `${h}h ${m}m` : m > 0 ? `${m}m` : `${secs}s`;
+    }
+    // Of the devices that visited, how many tapped Listen
+    const listenRate = computed(() => {
+        const r = admin.reports;
+        return r && r.uniqueDevices > 0 ? Math.round((r.listen.devices / r.uniqueDevices) * 100) : 0;
+    });
+
+    const resetMsg = ref(null);
+    async function resetStats() {
+        if (!window.confirm('Reset all visitor and Listen-live statistics and the cheer counter?\n\nPayments, donations and the supporters list are NOT affected. This cannot be undone.')) return;
+        try {
+            const r = await admin.resetStats();
+            resetMsg.value = `Cleared ${r.visits} visits and ${r.listens} listen sessions.`;
+        } catch {
+            resetMsg.value = 'Reset failed.';
+        }
+        setTimeout(() => (resetMsg.value = null), 4000);
+    }
 
     const chartOptions = {
         responsive: true,
@@ -282,6 +316,15 @@
         set: val => {
             editConfig.value.showScheduleJson = JSON.stringify(val);
         }
+    });
+
+    // FPP schedules can use sun-relative times instead of clock times
+    const isSunLabel = v => ['dawn', 'sunrise', 'sunset', 'dusk'].includes(String(v ?? '').toLowerCase().replace(/\s/g, ''));
+    const offsetText = m => (m ? ` ${m > 0 ? '+' : '-'}${Math.abs(m)} min` : '');
+    const needsLocation = computed(() => {
+        const c = editConfig.value;
+        if (!c || (c.latitude != null && c.longitude != null)) return false;
+        return scheduleEntries.value.some(e => e.enabled && (isSunLabel(e.start) || isSunLabel(e.end)));
     });
 
     function updateScheduleEntry(day, field, value) {
@@ -387,10 +430,42 @@
                 </div>
             </div>
 
+            <!-- Listen live stat cards -->
+            <div v-if="admin.reports?.listen" class="mb-6">
+                <div class="mb-2 flex items-center justify-between gap-3">
+                    <h2 class="text-sm font-semibold tracking-wide text-gray-300 uppercase">Listen live (30d)</h2>
+                    <span v-if="admin.reports.listen.listeningNow > 0" class="rounded-full bg-green-500/15 px-2.5 py-0.5 text-xs font-semibold text-green-300">{{ admin.reports.listen.listeningNow }} listening now</span>
+                </div>
+                <div class="grid grid-cols-2 gap-4 md:grid-cols-5">
+                    <div class="rounded-xl border border-gray-800 bg-gray-900 p-4">
+                        <p class="mb-1 text-xs text-gray-400">Listen taps</p>
+                        <p class="text-2xl font-bold text-green-400">{{ admin.reports.listen.sessions }}</p>
+                        <p class="mt-0.5 text-xs text-gray-500">{{ admin.reports.listen.sessionsToday }} today</p>
+                    </div>
+                    <div class="rounded-xl border border-gray-800 bg-gray-900 p-4">
+                        <p class="mb-1 text-xs text-gray-400">Unique listeners</p>
+                        <p class="text-2xl font-bold text-white">{{ admin.reports.listen.devices }}</p>
+                        <p class="mt-0.5 text-xs text-gray-500">{{ listenRate }}% of visitors</p>
+                    </div>
+                    <div class="rounded-xl border border-gray-800 bg-gray-900 p-4">
+                        <p class="mb-1 text-xs text-gray-400">Avg. listen time</p>
+                        <p class="text-2xl font-bold text-white">{{ fmtDuration(admin.reports.listen.averageSeconds) }}</p>
+                    </div>
+                    <div class="rounded-xl border border-gray-800 bg-gray-900 p-4">
+                        <p class="mb-1 text-xs text-gray-400">Total listening</p>
+                        <p class="text-2xl font-bold text-white">{{ fmtDuration(admin.reports.listen.totalSeconds) }}</p>
+                    </div>
+                    <div class="rounded-xl border border-gray-800 bg-gray-900 p-4">
+                        <p class="mb-1 text-xs text-gray-400">Peak at once</p>
+                        <p class="text-2xl font-bold text-yellow-400">{{ admin.reports.listen.peakConcurrent }}</p>
+                    </div>
+                </div>
+            </div>
+
             <!-- Charts -->
             <div v-if="admin.reports" class="mb-8 grid gap-6 md:grid-cols-2">
                 <div class="rounded-xl border border-gray-800 bg-gray-900 p-5 md:col-span-2">
-                    <p class="mb-4 text-sm text-gray-400">Visits &amp; Unique Devices (30d)</p>
+                    <p class="mb-4 text-sm text-gray-400">Visits, Unique Devices &amp; Listen taps (30d)</p>
                     <div class="h-48">
                         <Bar :data="visitsChartData" :options="chartOptions" />
                     </div>
@@ -406,6 +481,18 @@
                     <div class="h-48">
                         <Bar :data="queueChartData" :options="chartOptions" />
                     </div>
+                </div>
+            </div>
+
+            <!-- Reset -->
+            <div class="mb-8 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-800 bg-gray-900 p-4">
+                <div>
+                    <p class="text-sm font-medium text-gray-200">Reset statistics</p>
+                    <p class="text-xs text-gray-500">Clears visitor stats, Listen-live stats and the cheer counter. Payments, donations and the supporters list are kept.</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span v-if="resetMsg" class="text-xs text-blue-400">{{ resetMsg }}</span>
+                    <button @click="resetStats" class="rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-300 hover:bg-red-500/20">Reset stats</button>
                 </div>
             </div>
 
@@ -583,6 +670,14 @@
         <!-- Config Tab -->
         <div v-if="activeTab === 'config' && editConfig">
             <form @submit.prevent="saveConfig" class="space-y-6">
+                <div v-if="editConfig.showMode !== 'auto'" class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-yellow-500/50 bg-yellow-500/10 p-4">
+                    <p class="text-sm text-yellow-100">
+                        <strong>Manual override is {{ editConfig.showMode === 'on' ? 'FORCE ON' : 'FORCE OFF' }}.</strong>
+                        {{ editConfig.showMode === 'on' ? 'The season dates and weekly hours are being ignored, so the show (and the default playlist) runs right now.' : 'The show is closed regardless of dates or hours.' }}
+                    </p>
+                    <button type="button" @click="chooseMode('auto')" class="rounded-lg bg-yellow-400 px-4 py-2 text-sm font-semibold text-black hover:bg-yellow-300">Back to Automatic</button>
+                </div>
+
                 <!-- Season & manual override -->
                 <section class="rounded-xl border border-gray-700 bg-gray-900 p-5">
                     <div class="mb-1 flex items-center justify-between gap-3">
@@ -719,6 +814,20 @@
                     </div>
                     <p v-if="scheduleMsg" class="mb-3 text-xs text-blue-400">{{ scheduleMsg }}</p>
                     <div v-else class="mb-4" />
+
+                    <div v-if="needsLocation" class="mb-4 rounded-lg border border-yellow-500/40 bg-yellow-500/10 p-3 text-xs text-yellow-200">
+                        This schedule uses Dawn / Sunrise / Sunset / Dusk, but no location is set, so the show is treated as <strong>closed</strong> (the default playlist will not start). Enter your latitude and longitude below, or import from FPP again.
+                    </div>
+                    <div class="mb-4 grid gap-3 sm:grid-cols-2">
+                        <label class="block">
+                            <span class="text-xs text-gray-400">Latitude (for Dusk / Sunset times)</span>
+                            <input type="number" step="any" min="-90" max="90" v-model.number="editConfig.latitude" class="input mt-1" placeholder="e.g. 41.88" />
+                        </label>
+                        <label class="block">
+                            <span class="text-xs text-gray-400">Longitude</span>
+                            <input type="number" step="any" min="-180" max="180" v-model.number="editConfig.longitude" class="input mt-1" placeholder="e.g. -87.63" />
+                        </label>
+                    </div>
                     <div class="space-y-2">
                         <div v-for="entry in scheduleEntries" :key="entry.day" class="flex items-center gap-3 overflow-auto rounded-lg border px-3 py-2.5" :class="entry.enabled ? 'border-gray-700 bg-gray-800' : 'border-gray-800 bg-gray-900'">
                             <!-- Enable toggle -->
@@ -729,9 +838,13 @@
                             </span>
                             <!-- Times -->
                             <div class="flex flex-1 items-center gap-2" :class="entry.enabled ? '' : 'pointer-events-none opacity-40'">
-                                <input type="time" :value="entry.start" @change="e => updateScheduleEntry(entry.day, 'start', e.target.value)" class="input flex-1 py-1.5 text-xs" />
-                                <span class="shrink-0 text-xs text-gray-500">to</span>
-                                <input type="time" :value="entry.end" @change="e => updateScheduleEntry(entry.day, 'end', e.target.value)" class="input flex-1 py-1.5 text-xs" />
+                                <template v-for="(field, idx) in ['start', 'end']" :key="field">
+                                    <span v-if="idx === 1" class="shrink-0 text-xs text-gray-500">to</span>
+                                    <button v-if="isSunLabel(entry[field])" type="button" @click="updateScheduleEntry(entry.day, field, field === 'start' ? '17:00' : '22:00')" title="Click to use a fixed clock time instead" class="input flex-1 py-1.5 text-left text-xs text-yellow-300">
+                                        {{ entry[field] }}{{ offsetText(entry[field === 'start' ? 'startOffset' : 'endOffset']) }}
+                                    </button>
+                                    <input v-else type="time" :value="entry[field]" @change="e => updateScheduleEntry(entry.day, field, e.target.value)" class="input flex-1 py-1.5 text-xs" />
+                                </template>
                             </div>
                             <span v-if="!entry.enabled" class="shrink-0 text-xs text-gray-600">Closed</span>
                         </div>

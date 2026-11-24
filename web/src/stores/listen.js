@@ -3,6 +3,8 @@ import { defineStore } from 'pinia';
 
 import { ref } from 'vue';
 
+import { useSessionStore } from '@/stores/session';
+
 /**
  * "Listen live". The server relays FPP's Opus audio packets over a WebSocket on the site's normal
  * port (no WebRTC, no port forwarding). We decode each 20 ms packet and schedule it on a Web
@@ -95,7 +97,9 @@ export const useListenStore = defineStore('listen', () => {
         }
 
         const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-        ws = new WebSocket(`${proto}://${location.host}/api/listen/ws`);
+        // Anonymous per-browser id so the admin can see how many different people listen
+        const device = encodeURIComponent(useSessionStore().sessionToken);
+        ws = new WebSocket(`${proto}://${location.host}/api/listen/ws?t=${device}`);
         ws.binaryType = 'arraybuffer';
         ws.onmessage = e => {
             if (typeof e.data === 'string' || !decoder) return; // first message is just the format

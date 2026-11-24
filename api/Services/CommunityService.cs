@@ -30,6 +30,11 @@ public class CommunityService(
         lock (_gate) return _feed.ToList();
     }
 
+    public void ResetCheers() {
+        lock (_gate) { _cheersToday = 0; }
+        _lastCheer.Clear();
+    }
+
     public int CheersToday() {
         lock (_gate) { RollDay(); return _cheersToday; }
     }

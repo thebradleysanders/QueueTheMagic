@@ -1,5 +1,5 @@
 <script setup>
-    import { computed, onMounted, onUnmounted } from 'vue';
+    import { computed, onUnmounted, watch } from 'vue';
 
     import { useListenStore } from '@/stores/listen';
     import { useShowStore } from '@/stores/show';
@@ -12,12 +12,20 @@
     const playing = computed(() => listen.state === 'playing');
     const connecting = computed(() => listen.state === 'connecting');
 
-    let timer;
-    onMounted(() => {
-        if (!enabled.value) return;
-        listen.refreshStatus();
-        timer = setInterval(listen.refreshStatus, 20000);
-    });
+    // The config arrives a moment after the page loads, so start/stop polling when "enabled"
+    // changes rather than only checking once on mount.
+    let timer = null;
+    watch(
+        enabled,
+        on => {
+            clearInterval(timer);
+            timer = null;
+            if (!on) return;
+            listen.refreshStatus();
+            timer = setInterval(listen.refreshStatus, 10000);
+        },
+        { immediate: true }
+    );
     onUnmounted(() => clearInterval(timer));
 
     function toggle() {

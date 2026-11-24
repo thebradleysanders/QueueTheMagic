@@ -52,6 +52,9 @@ library.add(
     faTriangleExclamation, faUserGear, faWandMagicSparkles, faXmark
 );
 
+// iOS Safari ignores user-scalable=no, so block its pinch gesture directly.
+['gesturestart', 'gesturechange', 'gestureend'].forEach(type => document.addEventListener(type, e => e.preventDefault()));
+
 const app = createApp(App);
 
 app.component('font-awesome-icon', FontAwesomeIcon);

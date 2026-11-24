@@ -41,6 +41,10 @@ public class ShowConfig {
     // Legacy on/off flag, superseded by ShowMode. Kept only so the existing column stays valid.
     public bool IsSeasonActive { get; set; } = true;
 
+    // Where the show is, so Dusk / Sunset / Dawn / Sunrise schedule times can be worked out.
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
+
     // Season window (server-local dates, inclusive). Null = no limit on that side.
     public DateOnly? SeasonStart { get; set; }
     public DateOnly? SeasonEnd { get; set; }

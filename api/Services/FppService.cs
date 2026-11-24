@@ -255,6 +255,26 @@ public class FppService(IDbContextFactory<AppDbContext> dbFactory, ILogger<FppSe
         return result;
     }
 
+    /// <summary>Reads one FPP setting (e.g. Latitude). Best effort: returns null if FPP doesn't answer.</summary>
+    public async Task<string?> GetSettingAsync(string name) {
+        var response = await CallAsync($"/api/settings/{Uri.EscapeDataString(name)}");
+        if (response?.IsSuccessStatusCode != true) return null;
+        var json = (await response.Content.ReadAsStringAsync()).Trim();
+        try {
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            if (root.ValueKind == JsonValueKind.Object) {
+                foreach (var key in new[] { "value", name }) {
+                    if (root.TryGetProperty(key, out var v)) return v.ValueKind == JsonValueKind.String ? v.GetString() : v.ToString();
+                }
+                return null;
+            }
+            return root.ValueKind == JsonValueKind.String ? root.GetString() : root.ToString();
+        } catch {
+            return json.Trim('"');
+        }
+    }
+
     // GET /api/schedule → array of schedule entries
     public async Task<List<FppScheduleEntry>> GetScheduleAsync() {
         var response = await CallAsync("/api/schedule");

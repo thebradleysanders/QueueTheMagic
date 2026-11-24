@@ -191,6 +191,12 @@ namespace XlightsQueue.Migrations
                     b.Property<int>("RateLimitWindowMinutes")
                         .HasColumnType("INTEGER");
 
+                    b.Property<double?>("Latitude")
+                        .HasColumnType("REAL");
+
+                    b.Property<double?>("Longitude")
+                        .HasColumnType("REAL");
+
                     b.Property<bool>("ListenEnabled")
                         .HasColumnType("INTEGER");
 
@@ -395,6 +401,32 @@ namespace XlightsQueue.Migrations
                         .IsRequired();
 
                     b.Navigation("Playlist");
+                });
+
+            modelBuilder.Entity("XlightsQueue.Models.ListenSession", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ListenersAtStart")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Seconds")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("SessionToken")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StartedAt");
+
+                    b.ToTable("ListenSessions");
                 });
 
             modelBuilder.Entity("XlightsQueue.Models.Visit", b =>

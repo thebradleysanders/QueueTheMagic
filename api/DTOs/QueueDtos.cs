@@ -61,7 +61,7 @@ public record SupporterDto(string? Name, decimal Amount, string Kind, DateTime A
 public record AdminSupporterDto(int Id, string? Name, decimal Amount, string Kind, DateTime At);
 public record CommunityDto(decimal Raised, int Supporters, decimal Goal, string GoalLabel, int CheersToday, int WatchingTonight, IReadOnlyList<ActivityDto> Recent);
 public record SocialLinkDto(string Platform, string Url);
-public record ShowScheduleEntryDto(string Day, string Start, string End, bool Enabled);
+public record ShowScheduleEntryDto(string Day, string Start, string End, bool Enabled, int StartOffset = 0, int EndOffset = 0);
 
 public record SongDto(int Id, string Title, string Artist, int DurationSeconds, double AverageRating = 0, int TotalRatings = 0);
 public record PlaylistDto(int Id, string Name, string FppPlaylistName, List<SongDto> Songs);
@@ -86,10 +86,14 @@ public record ReportsDto(
     List<DailyStatDto> DailyStats,
     int TotalVisits,
     int UniqueDevices,
-    int VisitsToday
+    int VisitsToday,
+    ListenStatsDto Listen
 );
 
-public record DailyStatDto(string Date, decimal Donations, int SongsQueued, int Visits, int Devices);
+/// <summary>How popular "Listen live" is (last 30 days).</summary>
+public record ListenStatsDto(int Sessions, int Devices, int SessionsToday, long TotalSeconds, int AverageSeconds, int PeakConcurrent, int ListeningNow);
+
+public record DailyStatDto(string Date, decimal Donations, int SongsQueued, int Visits, int Devices, int Listens);
 public record VisitRequest(string SessionToken);
 
 public record SongAdminDto(int Id, string Title, string Artist, string Filename, int DurationSeconds);

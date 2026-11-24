@@ -85,11 +85,14 @@ public class AdminController(
         config.MqttPassword = updated.MqttPassword;
         config.MqttTopicPrefix = updated.MqttTopicPrefix;
         config.ShowScheduleJson = updated.ShowScheduleJson;
-        var mode = ScheduleHelper.ParseMode(updated.ShowMode);
-        if (mode == null) return BadRequest(new { error = "Show mode must be auto, on or off." });
+        if (updated.Latitude is < -90 or > 90 || updated.Longitude is < -180 or > 180)
+            return BadRequest(new { error = "Latitude must be between -90 and 90 and longitude between -180 and 180." });
+        config.Latitude = updated.Latitude;
+        config.Longitude = updated.Longitude;
         if (updated.SeasonStart != null && updated.SeasonEnd != null && updated.SeasonEnd < updated.SeasonStart)
             return BadRequest(new { error = "The season end date must be on or after the start date." });
-        config.ShowMode = mode;
+        // ShowMode (the manual override) is deliberately NOT saved here. It only changes through
+        // PUT show-mode or MQTT, so a stale settings form can never flip it by accident.
         config.SeasonStart = updated.SeasonStart;
         config.SeasonEnd = updated.SeasonEnd;
         config.OffSeasonMessage = updated.OffSeasonMessage;
@@ -174,6 +177,9 @@ public class AdminController(
         var visits = await db.Visits.Where(v => v.CreatedAt >= since)
             .Select(v => new { v.SessionToken, v.CreatedAt }).ToListAsync();
 
+        var listens = await db.ListenSessions.Where(l => l.StartedAt >= since)
+            .Select(l => new { l.SessionToken, l.StartedAt, l.Seconds, l.ListenersAtStart }).ToListAsync();
+
         var totalDonations = donations.Sum(d => d.Amount);
         var highestDonation = donations.Any() ? donations.Max(d => d.Amount) : 0;
         var totalPlayed = queueItems.Count(q => q.Status == QueueItemStatus.Played);
@@ -191,7 +197,8 @@ public class AdminController(
                 donations.Where(d => d.CreatedAt.Date == date).Sum(d => d.Amount),
                 queueItems.Count(q => q.CreatedAt.Date == date),
                 visits.Count(v => v.CreatedAt.Date == date),
-                visits.Where(v => v.CreatedAt.Date == date).Select(v => v.SessionToken).Distinct().Count()
+                visits.Where(v => v.CreatedAt.Date == date).Select(v => v.SessionToken).Distinct().Count(),
+                listens.Count(l => l.StartedAt.Date == date)
             ))
             .OrderBy(d => d.Date)
             .ToList();
@@ -199,7 +206,31 @@ public class AdminController(
         return Ok(new ReportsDto(totalDonations, totalPlayed, totalQueued, highestDonation, topSong, dailyStats,
             visits.Count,
             visits.Select(v => v.SessionToken).Distinct().Count(),
-            visits.Count(v => v.CreatedAt.Date == DateTime.UtcNow.Date)));
+            visits.Count(v => v.CreatedAt.Date == DateTime.UtcNow.Date),
+            new ListenStatsDto(
+                listens.Count,
+                listens.Select(l => l.SessionToken).Distinct().Count(),
+                listens.Count(l => l.StartedAt.Date == DateTime.UtcNow.Date),
+                listens.Sum(l => (long)l.Seconds),
+                listens.Count > 0 ? (int)listens.Average(l => l.Seconds) : 0,
+                listens.Count > 0 ? listens.Max(l => l.ListenersAtStart) : 0,
+                relay.ListenerCount)));
+    }
+
+    /// <summary>
+    /// Clears the visitor and Listen-live statistics and the cheer counter, for a fresh start
+    /// (for example after testing, or at the start of the season). Payments, donations and the
+    /// supporters list are NOT touched.
+    /// </summary>
+    [Authorize]
+    [HttpPost("stats/reset")]
+    public async Task<IActionResult> ResetStats() {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var visits = await db.Visits.ExecuteDeleteAsync();
+        var listens = await db.ListenSessions.ExecuteDeleteAsync();
+        community.ResetCheers();
+        await community.BroadcastCommunityAsync();
+        return Ok(new { visits, listens });
     }
 
     [Authorize]
@@ -377,7 +408,7 @@ public class AdminController(
                 .ToList();
 
             if (candidates.Count == 0) {
-                result.Add(new { day = dayName, start = "17:00", end = "22:00", enabled = false });
+                result.Add(new { day = dayName, start = "17:00", end = "22:00", enabled = false, startOffset = 0, endOffset = 0 });
                 continue;
             }
 
@@ -387,17 +418,27 @@ public class AdminController(
 
             var startStr = FormatFppTime(best.startTime);
             var endStr = FormatFppTime(best.endTime);
-            result.Add(new { day = dayName, start = startStr, end = endStr, enabled = true });
+            result.Add(new { day = dayName, start = startStr, end = endStr, enabled = true, startOffset = best.startTimeOffset, endOffset = best.endTimeOffset });
         }
 
         await using var db = await dbFactory.CreateDbContextAsync();
         var config = await db.ShowConfigs.FindAsync(1);
         if (config == null) return NotFound();
         config.ShowScheduleJson = JsonSerializer.Serialize(result);
+
+        // Dusk/Sunset need a location. Pull it from FPP if we don't have one yet (best effort).
+        if (config.Latitude == null || config.Longitude == null) {
+            if (double.TryParse(await fppService.GetSettingAsync("Latitude"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var lat)
+                && double.TryParse(await fppService.GetSettingAsync("Longitude"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var lon)
+                && (lat != 0 || lon != 0)) {
+                config.Latitude = lat;
+                config.Longitude = lon;
+            }
+        }
         await db.SaveChangesAsync();
 
         var enabled = result.Count(r => (bool)r.GetType().GetProperty("enabled")!.GetValue(r)!);
-        return Ok(new { synced = true, daysEnabled = enabled, totalEntries = entries.Count });
+        return Ok(new { synced = true, daysEnabled = enabled, totalEntries = entries.Count, needsLocation = ScheduleHelper.NeedsLocation(config) });
     }
 
     private static string FormatFppTime(string fppTime) {

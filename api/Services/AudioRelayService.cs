@@ -3,6 +3,9 @@ using System.Net;
 using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Threading.Channels;
+using Microsoft.EntityFrameworkCore;
+using XlightsQueue.Data;
+using XlightsQueue.Models;
 
 namespace XlightsQueue.Services;
 
@@ -14,7 +17,7 @@ namespace XlightsQueue.Services;
 /// normal HTTP(S) port. The browser decodes Opus and plays it with a small buffer.
 /// Nothing is re-encoded, and the UDP port never needs to be reachable from the internet.
 /// </summary>
-public class AudioRelayService(IConfiguration configuration, ILogger<AudioRelayService> logger) : BackgroundService {
+public class AudioRelayService(IConfiguration configuration, IDbContextFactory<AppDbContext> dbFactory, ILogger<AudioRelayService> logger) : BackgroundService {
     private readonly ConcurrentDictionary<Guid, Channel<ReadOnlyMemory<byte>>> _listeners = new();
     private long _lastPacketTicks;
     private long _packets;
@@ -75,7 +78,7 @@ public class AudioRelayService(IConfiguration configuration, ILogger<AudioRelayS
     }
 
     /// <summary>Streams audio to one WebSocket until it closes. Returns false if the listener cap is reached.</summary>
-    public async Task ServeAsync(WebSocket socket, int maxListeners, CancellationToken ct) {
+    public async Task ServeAsync(WebSocket socket, string sessionToken, int maxListeners, CancellationToken ct) {
         if (_listeners.Count >= maxListeners) {
             await socket.CloseAsync(WebSocketCloseStatus.PolicyViolation, "full", ct);
             return;
@@ -87,6 +90,8 @@ public class AudioRelayService(IConfiguration configuration, ILogger<AudioRelayS
             FullMode = BoundedChannelFullMode.DropOldest, SingleReader = true
         });
         _listeners[id] = channel;
+        var sessionId = await StartSessionAsync(sessionToken, _listeners.Count);
+        var started = DateTime.UtcNow;
         try {
             // Tell the browser what to expect before any audio.
             await socket.SendAsync("{\"codec\":\"opus\",\"sampleRate\":48000,\"channels\":2}"u8.ToArray(),
@@ -105,8 +110,33 @@ public class AudioRelayService(IConfiguration configuration, ILogger<AudioRelayS
             /* listener left */
         } finally {
             _listeners.TryRemove(id, out _);
+            await EndSessionAsync(sessionId, (int)Math.Round((DateTime.UtcNow - started).TotalSeconds));
             if (socket.State == WebSocketState.Open)
                 try { await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None); } catch { }
+        }
+    }
+
+    // Stats are best-effort: a database hiccup must never interrupt the audio.
+    private async Task<int?> StartSessionAsync(string token, int concurrent) {
+        try {
+            await using var db = await dbFactory.CreateDbContextAsync();
+            var s = new ListenSession { SessionToken = token, ListenersAtStart = concurrent };
+            db.ListenSessions.Add(s);
+            await db.SaveChangesAsync();
+            return s.Id;
+        } catch (Exception ex) {
+            logger.LogDebug("Listen stats start failed: {Message}", ex.Message);
+            return null;
+        }
+    }
+
+    private async Task EndSessionAsync(int? id, int seconds) {
+        if (id == null) return;
+        try {
+            await using var db = await dbFactory.CreateDbContextAsync();
+            await db.ListenSessions.Where(s => s.Id == id).ExecuteUpdateAsync(u => u.SetProperty(s => s.Seconds, seconds));
+        } catch (Exception ex) {
+            logger.LogDebug("Listen stats end failed: {Message}", ex.Message);
         }
     }
 

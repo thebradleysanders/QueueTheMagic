@@ -37,39 +37,69 @@ public static class ScheduleHelper {
     }
 
     /// <summary>Is the show open right now? A manual "on" ignores the weekly hours.</summary>
-    public static bool IsOpen(ShowConfig config) => config.ShowMode switch {
+    public static bool IsOpen(ShowConfig config, DateTime? now = null) => config.ShowMode switch {
         ModeOn => true,
         ModeOff => false,
-        _ => IsOpen(config.ShowScheduleJson)
+        _ => IsWithinSchedule(config.ShowScheduleJson, config.Latitude, config.Longitude, now ?? DateTime.Now)
     };
 
     /// <summary>Season is running AND the show is inside its hours. Used for gating requests and playback.</summary>
     public static bool IsRunning(ShowConfig config) => IsSeasonActive(config) && IsOpen(config);
 
+    /// <summary>True if the schedule uses Dawn/Sunrise/Sunset/Dusk but no location is set to work them out.</summary>
+    public static bool NeedsLocation(ShowConfig config) {
+        if (config.Latitude != null && config.Longitude != null) return false;
+        return ParseSchedule(config.ShowScheduleJson).Any(e => e.Enabled && (SunTimes.IsSunLabel(e.Start) || SunTimes.IsSunLabel(e.End)));
+    }
+
+    private static List<ShowScheduleEntryDto> ParseSchedule(string? json) {
+        if (string.IsNullOrWhiteSpace(json)) return [];
+        try { return JsonSerializer.Deserialize<List<ShowScheduleEntryDto>>(json, _jsonOpts) ?? []; } catch { return []; }
+    }
+
     /// <summary>
-    /// Returns true if the show is currently open based on the stored schedule JSON.
-    /// If no schedule is configured, the show is always open.
+    /// Is <paramref name="now"/> inside the weekly schedule? No schedule means always open.
+    /// Handles overnight windows (a Monday 17:00 to 01:00 window is still open at 00:30 Tuesday),
+    /// "24:00" ends, and sun-relative times with offsets. A sun-relative time that can't be worked out
+    /// (no location set) counts as closed, so the default playlist never runs outside the real schedule.
     /// </summary>
-    public static bool IsOpen(string? scheduleJson) {
-        if (string.IsNullOrWhiteSpace(scheduleJson)) return true;
+    public static bool IsWithinSchedule(string? scheduleJson, double? lat, double? lon, DateTime now) {
+        var schedule = ParseSchedule(scheduleJson);
+        if (schedule.Count == 0) return true;
 
-        List<ShowScheduleEntryDto>? schedule;
-        try { schedule = JsonSerializer.Deserialize<List<ShowScheduleEntryDto>>(scheduleJson, _jsonOpts); } catch { return true; }
+        var today = DateOnly.FromDateTime(now);
+        var time = TimeOnly.FromDateTime(now);
 
-        if (schedule == null || schedule.Count == 0) return true;
+        // Today's window, then yesterday's window if it ran past midnight.
+        if (WindowFor(schedule, today, lat, lon) is { } w && Inside(w, time)) return true;
+        if (WindowFor(schedule, today.AddDays(-1), lat, lon) is { } y && y.Start > y.End && time <= y.End) return true;
+        return false;
+    }
 
-        var todayName = DateTime.Now.DayOfWeek.ToString(); // "Sunday", "Monday", …
-        var todayEntry = schedule.FirstOrDefault(e => e.Day == todayName);
+    private static bool Inside((TimeOnly Start, TimeOnly End) w, TimeOnly t) =>
+        w.Start <= w.End ? t >= w.Start && t <= w.End : t >= w.Start;
 
-        if (todayEntry == null || !todayEntry.Enabled) return false;
+    private static (TimeOnly Start, TimeOnly End)? WindowFor(List<ShowScheduleEntryDto> schedule, DateOnly date, double? lat, double? lon) {
+        var entry = schedule.FirstOrDefault(e => e.Day == date.DayOfWeek.ToString());
+        if (entry == null || !entry.Enabled) return null;
 
-        if (TimeOnly.TryParse(todayEntry.Start, out var start) && TimeOnly.TryParse(todayEntry.End, out var end)) {
-            var now = TimeOnly.FromDateTime(DateTime.Now);
-            // Handle overnight spans (e.g. 22:00 – 02:00)
-            return start <= end ? now >= start && now <= end : now >= start || now <= end;
+        var start = ResolveTime(entry.Start, entry.StartOffset, date, lat, lon);
+        var end = ResolveTime(entry.End, entry.EndOffset, date, lat, lon);
+        // Unresolvable (bad text or no location for a sun label): closed.
+        return start == null || end == null ? null : (start.Value, end.Value);
+    }
+
+    private static TimeOnly? ResolveTime(string? text, int offsetMinutes, DateOnly date, double? lat, double? lon) {
+        if (string.IsNullOrWhiteSpace(text)) return null;
+
+        if (SunTimes.IsSunLabel(text)) {
+            if (lat == null || lon == null) return null;
+            var sun = SunTimes.Resolve(text, date, lat.Value, lon.Value);
+            return sun?.AddMinutes(offsetMinutes);
         }
 
-        // Sun-relative times (Dusk/Sunset/Sunrise), FPP handles those; treat as open
-        return true;
+        var trimmed = text.Trim();
+        if (trimmed.StartsWith("24:", StringComparison.Ordinal)) return TimeOnly.MaxValue;
+        return TimeOnly.TryParse(trimmed, out var t) ? t.AddMinutes(offsetMinutes) : null;
     }
 }
