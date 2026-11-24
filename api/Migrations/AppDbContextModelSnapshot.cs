@@ -61,6 +61,9 @@ namespace XlightsQueue.Migrations
                     b.Property<bool>("IsEnabled")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -298,6 +301,9 @@ namespace XlightsQueue.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<int>("PlaylistId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SortOrder")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Title")

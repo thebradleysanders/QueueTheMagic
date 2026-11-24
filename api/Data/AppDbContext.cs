@@ -16,6 +16,21 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<ListenSession> ListenSessions => Set<ListenSession>();
     public DbSet<GuestPass> GuestPasses => Set<GuestPass>();
 
+    // New playlists and songs (e.g. from an FPP import) go to the end of the display order.
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) {
+        var newPlaylists = ChangeTracker.Entries<Playlist>().Where(e => e.State == EntityState.Added && e.Entity.SortOrder == 0).Select(e => e.Entity).OrderBy(p => p.AddSeq).ToList();
+        if (newPlaylists.Count > 0) {
+            var next = (await Playlists.AsNoTracking().MaxAsync(p => (int?)p.SortOrder, cancellationToken) ?? 0) + 1;
+            foreach (var p in newPlaylists) p.SortOrder = next++;
+        }
+
+        foreach (var group in ChangeTracker.Entries<Song>().Where(e => e.State == EntityState.Added && e.Entity.SortOrder == 0).Select(e => e.Entity).GroupBy(s => s.PlaylistId)) {
+            var next = (await Songs.AsNoTracking().Where(s => s.PlaylistId == group.Key).MaxAsync(s => (int?)s.SortOrder, cancellationToken) ?? 0) + 1;
+            foreach (var s in group.OrderBy(s => s.AddSeq)) s.SortOrder = next++;
+        }
+        return await base.SaveChangesAsync(cancellationToken);
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
         modelBuilder.Entity<ShowConfig>().HasData(new ShowConfig { Id = 1 });
 

@@ -5,6 +5,8 @@
 
     import { computed, onMounted, onUnmounted, ref } from 'vue';
 
+    import { moveItem, useDragReorder } from '@/composables/useDragReorder';
+
     import { useAdminStore } from '@/stores/admin';
     import { useShowStore } from '@/stores/show';
 
@@ -178,6 +180,41 @@
         delete playlistEdits.value[p.id];
         playlistSaving.value[p.id] = false;
     }
+
+    // Display order of playlists and songs
+    const orderMsg = ref(null);
+    async function movePlaylist(from, to) {
+        const next = moveItem(admin.playlists, from, to);
+        if (next === admin.playlists) return;
+        admin.playlists = next;
+        try {
+            await admin.reorderPlaylists(next.map(p => p.id));
+            orderMsg.value = 'Order saved.';
+        } catch {
+            orderMsg.value = 'Could not save the order.';
+            await admin.fetchPlaylists();
+        }
+        setTimeout(() => (orderMsg.value = null), 2000);
+    }
+    async function moveSong(playlistId, from, to) {
+        const list = playlistSongs.value[playlistId];
+        const next = moveItem(list, from, to);
+        if (next === list) return;
+        playlistSongs.value[playlistId] = next;
+        try {
+            await admin.reorderSongs(playlistId, next.map(s => s.id));
+            orderMsg.value = 'Order saved.';
+        } catch {
+            orderMsg.value = 'Could not save the order.';
+            playlistSongs.value[playlistId] = await admin.fetchPlaylistSongs(playlistId);
+        }
+        setTimeout(() => (orderMsg.value = null), 2000);
+    }
+    const playlistDrag = useDragReorder(movePlaylist);
+    const songDrags = {};
+    const songDrag = id => (songDrags[id] ??= useDragReorder((from, to) => moveSong(id, from, to)));
+    // Only the grip is draggable, so typing in the name boxes still works normally
+    const gripActive = ref(null);
 
     async function togglePlaylistSongs(p) {
         if (expandedPlaylists.value[p.id]) {
@@ -617,10 +654,36 @@
                 </p>
             </div>
 
+            <p v-if="admin.playlists.length > 1" class="mb-3 flex items-center justify-between text-xs text-gray-500">
+                <span>Use the arrows (or drag the grip) to change the order visitors see. Changes save automatically.</span>
+                <span v-if="orderMsg" class="text-blue-400">{{ orderMsg }}</span>
+            </p>
+
             <div class="space-y-3">
-                <div v-for="p in admin.playlists" :key="p.id" class="rounded-xl border border-gray-800 bg-gray-900">
+                <div
+                    v-for="(p, pi) in admin.playlists"
+                    :key="p.id"
+                    :draggable="gripActive === 'p' + p.id"
+                    @dragstart="playlistDrag.start(pi, $event)"
+                    @dragover="playlistDrag.over(pi, $event)"
+                    @drop="playlistDrag.drop(pi, $event)"
+                    @dragend="playlistDrag.end(); gripActive = null"
+                    class="rounded-xl border bg-gray-900 transition"
+                    :class="playlistDrag.dragOver.value === pi && playlistDrag.dragFrom.value !== pi ? 'border-green-500' : 'border-gray-800'"
+                >
                     <!-- Playlist header row -->
                     <div class="flex flex-col gap-3 p-4 md:flex-row md:items-start">
+                        <div class="flex shrink-0 items-center gap-0.5 md:pt-0.5">
+                            <button type="button" @click="movePlaylist(pi, pi - 1)" :disabled="pi === 0" aria-label="Move playlist up" class="rounded p-1.5 text-gray-400 hover:bg-gray-800 hover:text-white disabled:opacity-25">
+                                <font-awesome-icon :icon="['fas', 'chevron-up']" />
+                            </button>
+                            <span @mousedown="gripActive = 'p' + p.id" @mouseup="gripActive = null" title="Drag to reorder" class="hidden cursor-grab px-1.5 py-0.5 text-gray-600 hover:text-gray-300 md:block">
+                                <font-awesome-icon :icon="['fas', 'grip-vertical']" />
+                            </span>
+                            <button type="button" @click="movePlaylist(pi, pi + 1)" :disabled="pi === admin.playlists.length - 1" aria-label="Move playlist down" class="rounded p-1.5 text-gray-400 hover:bg-gray-800 hover:text-white disabled:opacity-25">
+                                <font-awesome-icon :icon="['fas', 'chevron-down']" />
+                            </button>
+                        </div>
                         <div class="min-w-0 flex-1">
                             <input
                                 :value="(playlistEdits[p.id] ?? p).name"
@@ -662,10 +725,27 @@
                         <p v-else-if="playlistSongs[p.id].length === 0" class="text-sm text-gray-500">No songs in this playlist.</p>
                         <div v-else class="space-y-2">
                             <div
-                                v-for="song in playlistSongs[p.id]"
+                                v-for="(song, si) in playlistSongs[p.id]"
                                 :key="song.id"
-                                class="flex flex-col gap-2 rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 md:flex-row md:items-center"
+                                :draggable="gripActive === 's' + song.id"
+                                @dragstart.stop="songDrag(p.id).start(si, $event)"
+                                @dragover.stop="songDrag(p.id).over(si, $event)"
+                                @drop.stop="songDrag(p.id).drop(si, $event)"
+                                @dragend.stop="songDrag(p.id).end(); gripActive = null"
+                                class="flex flex-col gap-2 rounded-lg border bg-gray-800 px-3 py-2 md:flex-row md:items-center"
+                                :class="songDrag(p.id).dragOver.value === si && songDrag(p.id).dragFrom.value !== si ? 'border-green-500' : 'border-gray-700'"
                             >
+                                <div class="flex shrink-0 items-center gap-0.5">
+                                    <button type="button" @click="moveSong(p.id, si, si - 1)" :disabled="si === 0" aria-label="Move song up" class="rounded p-1.5 text-gray-400 hover:bg-gray-700 hover:text-white disabled:opacity-25">
+                                        <font-awesome-icon :icon="['fas', 'chevron-up']" />
+                                    </button>
+                                    <button type="button" @click="moveSong(p.id, si, si + 1)" :disabled="si === playlistSongs[p.id].length - 1" aria-label="Move song down" class="rounded p-1.5 text-gray-400 hover:bg-gray-700 hover:text-white disabled:opacity-25">
+                                        <font-awesome-icon :icon="['fas', 'chevron-down']" />
+                                    </button>
+                                    <span @mousedown="gripActive = 's' + song.id" @mouseup="gripActive = null" title="Drag to reorder" class="hidden cursor-grab px-1.5 text-gray-600 hover:text-gray-300 md:block">
+                                        <font-awesome-icon :icon="['fas', 'grip-vertical']" />
+                                    </span>
+                                </div>
                                 <div class="grid min-w-0 flex-1 grid-cols-1 gap-2 md:grid-cols-2">
                                     <input
                                         :value="(songEdits[song.id] ?? song).title"

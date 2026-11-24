@@ -15,10 +15,11 @@ public class SongsController(IDbContextFactory<AppDbContext> dbFactory) : Contro
         await using var db = await dbFactory.CreateDbContextAsync();
         var playlists = await db.Playlists
             .Where(p => p.IsEnabled && p.FppPlaylistName != "xlq_current" && p.Name != "xlq_current" && p.Songs.Any())
+            .OrderBy(p => p.SortOrder).ThenBy(p => p.Id)
             .Include(p => p.Songs)
             .Select(p => new PlaylistDto(
                 p.Id, p.Name, p.FppPlaylistName,
-                p.Songs.Select(s => new SongDto(
+                p.Songs.OrderBy(s => s.SortOrder).ThenBy(s => s.Id).Select(s => new SongDto(
                     s.Id, s.Title, s.Artist, s.DurationSeconds,
                     s.Ratings.Any() ? Math.Round(s.Ratings.Average(r => r.Rating), 1) : 0,
                     s.Ratings.Count

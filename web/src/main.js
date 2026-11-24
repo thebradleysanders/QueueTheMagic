@@ -5,8 +5,11 @@ import {
     faBolt,
     faChartBar,
     faCheck,
+    faChevronDown,
     faChevronLeft,
     faChevronRight,
+    faChevronUp,
+    faGripVertical,
     faCircleInfo,
     faClover,
     faGear,
@@ -47,7 +50,7 @@ import router from './router';
 // Register only the icons we use (the full set adds ~1.5 MB to the bundle).
 library.add(
     faGithub,
-    faBolt, faCalendarDays, faChartBar, faCheck, faChevronLeft, faChevronRight, faCircleInfo, faClover, faGear, faGhost, faGift, faHandsClapping, faHeadphones,
+    faBolt, faCalendarDays, faChartBar, faCheck, faChevronDown, faChevronLeft, faChevronRight, faChevronUp, faGripVertical, faCircleInfo, faClover, faGear, faGhost, faGift, faHandsClapping, faHeadphones,
     faHeart, faHouse, faLeaf, faLightbulb, faListOl, faMusic, faPlay, faRadio, faRotate, faSeedling, faSnowflake, faStar, faStop,
     faTriangleExclamation, faUserGear, faWandMagicSparkles, faXmark
 );

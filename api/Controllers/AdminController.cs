@@ -379,6 +379,7 @@ public class AdminController(
     public async Task<IActionResult> GetPlaylists() {
         await using var db = await dbFactory.CreateDbContextAsync();
         var playlists = await db.Playlists
+            .OrderBy(p => p.SortOrder).ThenBy(p => p.Id)
             .Include(p => p.Songs)
             .Select(p => new PlaylistAdminDto(p.Id, p.Name, p.FppPlaylistName, p.IsEnabled, p.Songs.Count))
             .ToListAsync();
@@ -397,13 +398,43 @@ public class AdminController(
         return Ok(new PlaylistAdminDto(playlist.Id, playlist.Name, playlist.FppPlaylistName, playlist.IsEnabled, 0));
     }
 
+    /// <summary>Saves the display order of the playlists: the ids, first to last.</summary>
+    [Authorize]
+    [HttpPut("playlists/order")]
+    public async Task<IActionResult> ReorderPlaylists([FromBody] ReorderRequest request) {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var playlists = await db.Playlists.ToListAsync();
+        ApplyOrder(playlists, request.Ids, p => p.Id, (p, n) => p.SortOrder = n);
+        await db.SaveChangesAsync();
+        return Ok();
+    }
+
+    /// <summary>Saves the display order of the songs inside one playlist.</summary>
+    [Authorize]
+    [HttpPut("playlists/{id}/songs/order")]
+    public async Task<IActionResult> ReorderSongs(int id, [FromBody] ReorderRequest request) {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var songs = await db.Songs.Where(s => s.PlaylistId == id).ToListAsync();
+        ApplyOrder(songs, request.Ids, s => s.Id, (s, n) => s.SortOrder = n);
+        await db.SaveChangesAsync();
+        return Ok();
+    }
+
+    // Listed ids get 1..n in the order given; anything not listed keeps its relative order after them.
+    private static void ApplyOrder<T>(List<T> items, int[] ids, Func<T, int> idOf, Action<T, int> set) {
+        var position = ids.Distinct().Select((id, i) => (id, i)).ToDictionary(x => x.id, x => x.i);
+        var n = 1;
+        foreach (var item in items.OrderBy(i => position.TryGetValue(idOf(i), out var p) ? p : int.MaxValue).ThenBy(idOf))
+            set(item, n++);
+    }
+
     [Authorize]
     [HttpGet("playlists/{id}/songs")]
     public async Task<IActionResult> GetPlaylistSongs(int id) {
         await using var db = await dbFactory.CreateDbContextAsync();
         var songs = await db.Songs
             .Where(s => s.PlaylistId == id)
-            .OrderBy(s => s.Title)
+            .OrderBy(s => s.SortOrder).ThenBy(s => s.Id)
             .Select(s => new SongAdminDto(s.Id, s.Title, s.Artist, s.Filename, s.DurationSeconds))
             .ToListAsync();
         return Ok(songs);

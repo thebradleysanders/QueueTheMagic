@@ -139,6 +139,14 @@ export const useAdminStore = defineStore('admin', () => {
         return data;
     }
 
+    async function reorderPlaylists(ids) {
+        await axios.put('/api/admin/playlists/order', { ids }, { headers: authHeaders() });
+    }
+
+    async function reorderSongs(playlistId, ids) {
+        await axios.put(`/api/admin/playlists/${playlistId}/songs/order`, { ids }, { headers: authHeaders() });
+    }
+
     async function updateSong(id, title, artist) {
         const { data } = await axios.put(`/api/admin/songs/${id}`, { title, artist }, { headers: authHeaders() });
         return data;
@@ -177,6 +185,8 @@ export const useAdminStore = defineStore('admin', () => {
         syncSchedule,
         fetchPlaylistSongs,
         updateSong,
+        reorderPlaylists,
+        reorderSongs,
         authHeaders
     };
 });

@@ -56,6 +56,7 @@ public record PublicConfigDto(
 );
 
 public record ShowModeRequest(string Mode);
+public record ReorderRequest(int[] Ids);
 public record GuestPassDto(int Id, string Name, string Code, DateTime CreatedAt, DateTime? LastUsedAt, int RequestCount);
 public record CreateGuestPassRequest(string Name);
 public record CheerRequest(string SessionToken);
