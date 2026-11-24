@@ -9,6 +9,9 @@ public class QueueItem {
     public int? DonationId { get; set; }
     public Donation? Donation { get; set; }
     public string SessionToken { get; set; } = string.Empty;
+
+    /// <summary>Requested by a friends &amp; family pass (free, and allowed to play outside the public season/hours).</summary>
+    public bool IsGuest { get; set; }
     public int Position { get; set; }
     public QueueItemStatus Status { get; set; } = QueueItemStatus.Pending;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

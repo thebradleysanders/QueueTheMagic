@@ -2,7 +2,7 @@
     import axios from 'axios';
     import { RouterLink, RouterView, useRoute } from 'vue-router';
 
-    import { computed, onMounted } from 'vue';
+    import { computed, onMounted, ref } from 'vue';
 
     import { useSeason } from '@/composables/useSeason';
     import { useSignalR } from '@/composables/useSignalR';
@@ -12,15 +12,21 @@
     import { useShowStore } from '@/stores/show';
 
     import ActivityToasts from '@/components/ActivityToasts.vue';
+    import GuestSignInModal from '@/components/GuestSignInModal.vue';
     import LightString from '@/components/LightString.vue';
     import StarLogo from '@/components/StarLogo.vue';
     import { useCommunityStore } from '@/stores/community';
+    import { useGuestStore } from '@/stores/guest';
     import { useListenStore } from '@/stores/listen';
 
     import { version } from '../package.json';
 
     const showStore = useShowStore();
     const community = useCommunityStore();
+    const guest = useGuestStore();
+    const showGuestModal = ref(false);
+    // Friends & family can see the whole site even before the public season opens
+    const siteVisible = computed(() => showStore.config.isSeasonActive || guest.signedIn);
     const listen = useListenStore();
     const sessionStore = useSessionStore();
     useSignalR();
@@ -49,6 +55,13 @@
 
     onMounted(() => {
         recordVisit();
+        // Share link: https://your-site/?guest=ABC123 signs a friend in automatically
+        const link = new URLSearchParams(window.location.search).get('guest');
+        if (link) {
+            guest.signIn(link).catch(() => {}).finally(() => window.history.replaceState({}, '', window.location.pathname));
+        } else {
+            guest.verify();
+        }
         showStore.fetchNowPlaying();
         showStore.fetchQueue();
         if (!isAdmin.value) community.fetchCommunity();
@@ -110,6 +123,10 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-1">
+                    <button v-if="guest.signedIn" @click="guest.signOut()" class="bg-ac1-soft text-ac1 flex max-w-[9rem] items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold" aria-label="Sign out of friends and family">
+                        <span class="truncate">{{ guest.name }}</span>
+                        <font-awesome-icon :icon="['fas', 'xmark']" class="shrink-0 opacity-70" />
+                    </button>
                     <button v-if="listen.state === 'playing'" @click="listen.stop()" class="bg-ac1-soft text-ac1 flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold" aria-label="Stop listening">
                         <font-awesome-icon :icon="['fas', 'headphones']" /> Live
                         <font-awesome-icon :icon="['fas', 'xmark']" class="opacity-70" />
@@ -121,7 +138,7 @@
             </header>
             <LightString />
         </div>
-        <ActivityToasts v-if="!isAdmin && showStore.config.isSeasonActive" />
+        <ActivityToasts v-if="!isAdmin && siteVisible" />
 
         <!-- Admin top bar -->
         <header v-if="isAdmin" class="flex items-center gap-4 border-b border-gray-800 bg-gray-900 px-4 py-3">
@@ -129,7 +146,7 @@
         </header>
 
         <!-- Off-season splash -->
-        <div v-if="!isAdmin && !showStore.config.isSeasonActive" class="flex flex-1 flex-col items-center justify-center px-6 py-16 text-center">
+        <div v-if="!isAdmin && !siteVisible" class="flex flex-1 flex-col items-center justify-center px-6 py-16 text-center">
             <StarLogo class="text-ac3 star-glow mb-6 text-6xl" />
             <h1 class="text-main mb-2 text-2xl font-semibold tracking-tight">{{ showStore.config.siteName }}</h1>
             <p v-if="opensOn" class="text-ac1 mb-3 text-sm font-semibold">Opens {{ opensOn }}</p>
@@ -149,16 +166,24 @@
                     <span>{{ link.platform }}</span>
                 </a>
             </div>
-            <RouterLink to="/admin/login" class="text-hint hover:text-main mt-12 text-xs">Admin login</RouterLink>
+            <button v-if="showStore.config.guestPassesEnabled" @click="showGuestModal = true" class="btn-quiet mt-8 rounded-lg px-4 py-2 text-sm">Friends &amp; family sign in</button>
+            <RouterLink to="/admin/login" class="text-hint hover:text-main mt-8 text-xs">Admin login</RouterLink>
         </div>
 
+        <!-- Guest preview banner: shown to friends & family while the public can't see the show yet -->
+        <div v-if="!isAdmin && guest.signedIn && !showStore.config.isSeasonActive" class="bg-ac1-soft text-ac1 px-4 py-2 text-center text-xs font-medium">
+            Friends &amp; family preview. The show isn't open to the public yet.
+        </div>
+
+        <GuestSignInModal v-if="showGuestModal" @close="showGuestModal = false" />
+
         <!-- Main content -->
-        <main v-if="isAdmin || showStore.config.isSeasonActive" class="flex-1" :class="isAdmin ? '' : socialLinks.length ? 'pb-28' : 'pb-20'">
+        <main v-if="isAdmin || siteVisible" class="flex-1" :class="isAdmin ? '' : socialLinks.length ? 'pb-28' : 'pb-20'">
             <RouterView />
         </main>
 
         <!-- Bottom nav (public only, season active) -->
-        <nav v-if="!isAdmin && showStore.config.isSeasonActive" class="nav-bg nav-border fixed inset-x-0 bottom-0 z-40 border-t backdrop-blur">
+        <nav v-if="!isAdmin && siteVisible" class="nav-bg nav-border fixed inset-x-0 bottom-0 z-40 border-t backdrop-blur">
             <div v-if="socialLinks.length" class="border-base flex items-center justify-center gap-5 border-b py-2">
                 <a v-for="link in socialLinks" :key="link.platform" :href="link.url" target="_blank" rel="noopener" class="text-hint hover:text-main flex items-center gap-1.5 text-xs transition">
                     <i :class="`pi ${iconFor(link.platform)}`"></i>

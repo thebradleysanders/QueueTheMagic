@@ -30,7 +30,7 @@
     const songSaving = ref({}); // songId → bool
 
     onMounted(async () => {
-        await Promise.all([admin.fetchReports(), admin.fetchSupporters(), admin.fetchRatings(), admin.fetchConfig(), admin.fetchDiagnostics(), admin.fetchPlaylists()]);
+        await Promise.all([admin.fetchReports(), admin.fetchSupporters(), admin.fetchGuests(), admin.fetchRatings(), admin.fetchConfig(), admin.fetchDiagnostics(), admin.fetchPlaylists()]);
         editConfig.value = JSON.parse(JSON.stringify(admin.config));
         diagInterval.value = setInterval(() => admin.fetchDiagnostics(), 5000);
     });
@@ -96,6 +96,36 @@
         if (m === 'off') return 'Forced off: the show is closed regardless of dates or hours.';
         return 'Automatic: follows the season dates and weekly hours below.';
     });
+
+    // Friends & family passes
+    const newGuestName = ref('');
+    const guestMsg = ref(null);
+    async function createGuest() {
+        const name = newGuestName.value.trim();
+        if (!name) return;
+        try {
+            const g = await admin.addGuest(name);
+            newGuestName.value = '';
+            guestMsg.value = `${g.name}'s code is ${g.code}`;
+        } catch (e) {
+            guestMsg.value = e.response?.data?.error || 'Could not add the pass.';
+        }
+        setTimeout(() => (guestMsg.value = null), 6000);
+    }
+    async function copyGuest(g, what) {
+        const text = what === 'code' ? g.code : `${window.location.origin}/?guest=${g.code}`;
+        try {
+            await navigator.clipboard.writeText(text);
+            guestMsg.value = what === 'code' ? `Copied code ${g.code}` : `Copied sign-in link for ${g.name}`;
+        } catch {
+            guestMsg.value = text;
+        }
+        setTimeout(() => (guestMsg.value = null), 4000);
+    }
+    async function removeGuest(g) {
+        if (!window.confirm(`Delete ${g.name}'s pass? They will be signed out and can no longer request songs.`)) return;
+        await admin.deleteGuest(g.id);
+    }
 
     const listenStatus = ref(null);
     async function refreshListenStatus() {
@@ -766,7 +796,7 @@
                         <div class="flex flex-wrap gap-3">
                             <div class="flex flex-col gap-1">
                                 <button type="button" @click="syncPlaylists" class="rounded-lg px-4 py-2.5 text-sm font-medium text-white transition" style="background: linear-gradient(135deg, #312e81, #4338ca); border: 1px solid rgba(99, 102, 241, 0.4)">
-                                    <font-awesome-icon :icon="['fas', 'sync']" class="text-gray-300" />
+                                    <font-awesome-icon :icon="['fas', 'rotate']" class="text-gray-300" />
                                     Import Playlists
                                 </button>
                                 <p v-if="syncPlaylistsMsg" class="px-1 text-xs" :class="syncPlaylistsMsg.startsWith('✓') ? 'text-green-400' : syncPlaylistsMsg === 'Syncing...' ? 'text-gray-400' : 'text-red-400'">
@@ -775,7 +805,7 @@
                             </div>
                             <div class="flex flex-col gap-1">
                                 <button type="button" @click="syncSongs" class="rounded-lg px-4 py-2.5 text-sm font-medium text-white transition" style="background: linear-gradient(135deg, #1e3a5f, #1e40af); border: 1px solid rgba(59, 130, 246, 0.4)">
-                                    <font-awesome-icon :icon="['fas', 'sync']" class="text-gray-300" />
+                                    <font-awesome-icon :icon="['fas', 'rotate']" class="text-gray-300" />
                                     Import Sequences
                                 </button>
                                 <p v-if="syncSongsMsg" class="px-1 text-xs" :class="syncSongsMsg.startsWith('✓') ? 'text-green-400' : syncSongsMsg === 'Syncing...' ? 'text-gray-400' : 'text-red-400'">
@@ -903,6 +933,42 @@
                             <span class="text-xs text-gray-400">Window (minutes)</span>
                             <input type="number" min="1" v-model="editConfig.rateLimitWindowMinutes" class="input mt-1" />
                         </label>
+                    </div>
+                </section>
+
+                <!-- Friends & family -->
+                <section class="rounded-xl border border-gray-800 bg-gray-900 p-5">
+                    <h3 class="mb-1 text-sm font-semibold tracking-wide text-gray-300 uppercase">Friends &amp; family</h3>
+                    <p class="mb-4 text-xs text-gray-500">
+                        Give people a personal code. They sign in on the site and can see the show and request songs for <strong>free, at any time</strong>, even before the season opens or outside show hours (those songs play on your lights). Delete a pass to cut that person off.
+                    </p>
+                    <div class="mb-4 grid gap-4 md:grid-cols-2">
+                        <label class="flex cursor-pointer items-center gap-3">
+                            <input type="checkbox" v-model="editConfig.guestPassesEnabled" class="h-4 w-4 accent-green-500" />
+                            <span class="text-sm text-gray-200">Allow friends &amp; family sign-in</span>
+                        </label>
+                        <label class="block">
+                            <span class="text-xs text-gray-400">Free songs per guest, per rate-limit window</span>
+                            <input type="number" min="1" max="200" v-model.number="editConfig.guestMaxSongsPerWindow" class="input mt-1" />
+                        </label>
+                    </div>
+
+                    <div class="mb-3 flex gap-2">
+                        <input v-model="newGuestName" @keydown.enter.prevent="createGuest" type="text" maxlength="30" placeholder="Guest name, e.g. Grandma Sue" class="input flex-1" />
+                        <button type="button" @click="createGuest" :disabled="!newGuestName.trim()" class="shrink-0 rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-900 disabled:opacity-40">Add pass</button>
+                    </div>
+                    <p v-if="guestMsg" class="mb-2 text-xs text-blue-400">{{ guestMsg }}</p>
+
+                    <div v-if="!admin.guests.length" class="py-4 text-center text-sm text-gray-500">No passes yet.</div>
+                    <div v-else class="divide-y divide-gray-800">
+                        <div v-for="g in admin.guests" :key="g.id" class="flex flex-wrap items-center gap-3 py-2.5 text-sm">
+                            <span class="min-w-0 flex-1 truncate text-gray-100">{{ g.name }}</span>
+                            <span class="rounded bg-gray-800 px-2 py-1 font-mono text-sm tracking-widest text-yellow-300">{{ g.code }}</span>
+                            <span class="hidden w-28 text-right text-xs text-gray-500 sm:block">{{ g.requestCount }} requests</span>
+                            <button type="button" @click="copyGuest(g, 'code')" class="rounded-md border border-gray-700 px-2 py-1 text-xs text-gray-300 hover:bg-gray-800">Copy code</button>
+                            <button type="button" @click="copyGuest(g, 'link')" class="rounded-md border border-gray-700 px-2 py-1 text-xs text-gray-300 hover:bg-gray-800">Copy link</button>
+                            <button type="button" @click="removeGuest(g)" class="rounded-md border border-gray-700 px-2 py-1 text-xs text-gray-300 hover:border-red-500/50 hover:text-red-300">Delete</button>
+                        </div>
                     </div>
                 </section>
 

@@ -22,6 +22,10 @@ public class ShowConfig {
 
     // "Listen live" phone audio (FPP Opus RTP → API → browsers over WebSocket)
     public bool ListenEnabled { get; set; } = false;
+
+    // Friends & family passes: free song requests, any time
+    public bool GuestPassesEnabled { get; set; } = true;
+    public int GuestMaxSongsPerWindow { get; set; } = 10;
     public int ListenMaxListeners { get; set; } = 50;
 
     // FPP

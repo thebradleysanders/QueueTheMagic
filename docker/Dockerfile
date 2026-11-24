@@ -14,6 +14,8 @@ RUN apk add --no-cache curl \
 
 # ── Stage 2: Build Vue frontend ───────────────────────────────────────────────
 FROM node:22-alpine AS web-build
+ARG VERSION
+ENV VITE_APP_VERSION=${VERSION}
 WORKDIR /web
 COPY --from=source /src/web/package*.json ./
 RUN npm ci

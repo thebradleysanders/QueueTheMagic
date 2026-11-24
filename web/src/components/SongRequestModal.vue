@@ -8,6 +8,7 @@
 
     import { usePayment } from '@/composables/usePayment';
 
+    import { useGuestStore } from '@/stores/guest';
     import { useSessionStore } from '@/stores/session';
     import { useShowStore } from '@/stores/show';
 
@@ -16,6 +17,7 @@
     const emit = defineEmits(['close']);
     const showStore = useShowStore();
     const sessionStore = useSessionStore();
+    const guest = useGuestStore();
     const { displayName } = useSupporterName();
     const { createIntent, mountPaymentElement, confirmPayment } = usePayment();
 
@@ -72,6 +74,13 @@
         loading.value = true;
         errorMsg.value = null;
         try {
+            // Friends & family: free request, no payment step
+            if (guest.signedIn) {
+                await guest.requestSong(selectedSong.value.id);
+                await showStore.fetchQueue();
+                step.value = 'done';
+                return;
+            }
             if (isDev) {
                 await axios.post('/api/queue', {
                     songId: selectedSong.value.id,
@@ -130,7 +139,7 @@
                             <font-awesome-icon v-if="!selectedPlaylist" :icon="['fas', 'music']" />
                             {{ selectedPlaylist ? selectedPlaylist.name : 'Pick a Song' }}
                         </h2>
-                        <p v-if="!selectedPlaylist" class="text-hint text-xs">${{ showStore.config.songRequestCost }} to request</p>
+                        <p v-if="!selectedPlaylist" class="text-hint text-xs">{{ guest.signedIn ? 'Free for friends & family' : `$${showStore.config.songRequestCost} to request` }}</p>
                     </div>
                 </div>
                 <button @click="emit('close')" aria-label="Close" class="text-hint hover:text-main flex h-8 w-8 items-center justify-center text-xl">
@@ -212,9 +221,9 @@
 
             <!-- Pay button -->
             <div v-if="step === 'select' && selectedPlaylist" class="space-y-3 px-4 pt-2 pb-5">
-                <SupporterNameField v-if="selectedSong" />
+                <SupporterNameField v-if="selectedSong && !guest.signedIn" />
                 <button @click="pay" :disabled="!selectedSong || loading" class="btn-ac w-full rounded-xl py-4 text-base font-semibold transition active:scale-95 disabled:opacity-40">
-                    {{ loading ? 'Processing…' : selectedSong ? (isDev ? `Queue "${selectedSong.title}" (dev)` : `Request song · $${showStore.config.songRequestCost}`) : 'Select a song above' }}
+                    {{ loading ? 'Processing…' : selectedSong ? (guest.signedIn ? 'Add to the queue (free)' : isDev ? `Queue "${selectedSong.title}" (dev)` : `Request song · $${showStore.config.songRequestCost}`) : 'Select a song above' }}
                 </button>
             </div>
         </div>

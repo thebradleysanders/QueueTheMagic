@@ -94,6 +94,9 @@ namespace XlightsQueue.Migrations
                     b.Property<int?>("DonationId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsGuest")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("Position")
                         .HasColumnType("INTEGER");
 
@@ -196,6 +199,12 @@ namespace XlightsQueue.Migrations
 
                     b.Property<double?>("Longitude")
                         .HasColumnType("REAL");
+
+                    b.Property<int>("GuestMaxSongsPerWindow")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("GuestPassesEnabled")
+                        .HasColumnType("INTEGER");
 
                     b.Property<bool>("ListenEnabled")
                         .HasColumnType("INTEGER");
@@ -401,6 +410,37 @@ namespace XlightsQueue.Migrations
                         .IsRequired();
 
                     b.Navigation("Playlist");
+                });
+
+            modelBuilder.Entity("XlightsQueue.Models.GuestPass", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LastUsedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("RequestCount")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("GuestPasses");
                 });
 
             modelBuilder.Entity("XlightsQueue.Models.ListenSession", b =>

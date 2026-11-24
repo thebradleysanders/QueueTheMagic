@@ -33,6 +33,7 @@ I often get asked
 - Admin dashboard: config, reports, live queue, diagnostics
 - MQTT event publishing (optional) for phone alerts, Home Assistant, signs and more. **[See the MQTT guide](docs/MQTT.md)**
 - "Listen live" phone audio in sync with the lights, relayed from FPP with no port forwarding (optional). **[See the Listen guide](docs/LISTEN.md)**
+- Friends & family passes: give people a personal code to sign in, see the show before it opens and pick songs for free, any time (Admin → Config → Friends & family)
     - ```test``` - When the test button is clicked in the UI.
     - ```donation``` - When a 'Just because' donation occurs.
     - ```nowplaying``` - When now playing changes.

@@ -1,11 +1,20 @@
 <script setup>
-    import { computed } from 'vue';
+    import { computed, ref } from 'vue';
 
+    import { useGuestStore } from '@/stores/guest';
     import { useShowStore } from '@/stores/show';
 
-    import { version } from '../../package.json';
+    import GuestSignInModal from '@/components/GuestSignInModal.vue';
+
+    import { version as packageVersion } from '../../package.json';
+
+    // The Docker build passes the release tag (e.g. v1.0.13); local builds fall back to package.json
+    const tag = import.meta.env.VITE_APP_VERSION;
+    const version = /^v?\d/.test(tag ?? '') ? tag.replace(/^v/, '') : packageVersion;
 
     const showStore = useShowStore();
+    const guest = useGuestStore();
+    const showGuestModal = ref(false);
     const config = computed(() => showStore.config);
 
     const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -103,6 +112,11 @@
         <div class="border-base space-y-1 border-t pt-4 text-center">
             <p class="text-hint text-xs">Created by <span class="text-sub font-medium">Brad Sanders</span></p>
             <p class="text-hint text-xs">v{{ version }}</p>
+            <p v-if="config.guestPassesEnabled" class="pt-1">
+                <button v-if="!guest.signedIn" @click="showGuestModal = true" class="text-hint hover:text-main text-xs underline underline-offset-2">Friends &amp; family sign in</button>
+                <button v-else @click="guest.signOut()" class="text-hint hover:text-main text-xs underline underline-offset-2">Signed in as {{ guest.name }} (sign out)</button>
+            </p>
         </div>
+        <GuestSignInModal v-if="showGuestModal" @close="showGuestModal = false" />
     </div>
 </template>

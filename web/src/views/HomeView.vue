@@ -2,6 +2,7 @@
     import { computed, ref } from 'vue';
 
     import { useCommunityStore } from '@/stores/community';
+    import { useGuestStore } from '@/stores/guest';
     import { useShowStore } from '@/stores/show';
 
     import CheerButton from '@/components/CheerButton.vue';
@@ -15,9 +16,11 @@
 
     const showStore = useShowStore();
     const community = useCommunityStore();
+    const guest = useGuestStore();
     const showModal = ref(false);
     const showDonate = ref(false);
-    const isOpen = computed(() => showStore.config.isOpen);
+    // Friends & family can request any time, for free
+    const isOpen = computed(() => showStore.config.isOpen || guest.signedIn);
     const waiting = computed(() => showStore.queue.filter(q => q.status === 'Pending').length);
 </script>
 
@@ -34,7 +37,7 @@
                 <span class="block text-lg leading-tight font-bold">Pick the next song</span>
                 <span class="block text-sm opacity-75">{{ waiting === 0 ? 'Nothing in the queue. Yours plays next.' : `${waiting} in the queue. Jump in!` }}</span>
             </span>
-            <span class="shrink-0 rounded-full bg-black/15 px-3 py-1 text-sm font-bold">${{ showStore.config.songRequestCost }}</span>
+            <span class="shrink-0 rounded-full bg-black/15 px-3 py-1 text-sm font-bold">{{ guest.signedIn ? 'Free' : `$${showStore.config.songRequestCost}` }}</span>
         </button>
         <div v-else class="bg-card border-base text-sub rounded-2xl border px-4 py-3 text-center text-sm">
             Song requests are closed right now. See the Info tab for show hours.

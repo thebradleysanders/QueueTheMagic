@@ -51,10 +51,13 @@ public record PublicConfigDto(
     string? SeasonStart = null,
     string? SeasonEnd = null,
     bool ShowSupporters = true,
-    bool ListenEnabled = false
+    bool ListenEnabled = false,
+    bool GuestPassesEnabled = true
 );
 
 public record ShowModeRequest(string Mode);
+public record GuestPassDto(int Id, string Name, string Code, DateTime CreatedAt, DateTime? LastUsedAt, int RequestCount);
+public record CreateGuestPassRequest(string Name);
 public record CheerRequest(string SessionToken);
 public record ActivityDto(string Kind, string? Title, decimal? Amount, DateTime At, string? Name = null);
 public record SupporterDto(string? Name, decimal Amount, string Kind, DateTime At);

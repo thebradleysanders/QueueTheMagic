@@ -14,7 +14,7 @@ public class SongsController(IDbContextFactory<AppDbContext> dbFactory) : Contro
     public async Task<IActionResult> GetSongs() {
         await using var db = await dbFactory.CreateDbContextAsync();
         var playlists = await db.Playlists
-            .Where(p => p.IsEnabled)
+            .Where(p => p.IsEnabled && p.FppPlaylistName != "xlq_current" && p.Name != "xlq_current" && p.Songs.Any())
             .Include(p => p.Songs)
             .Select(p => new PlaylistDto(
                 p.Id, p.Name, p.FppPlaylistName,

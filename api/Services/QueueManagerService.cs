@@ -108,28 +108,20 @@ public class QueueManagerService(
 
         var config = await GetConfigAsync();
 
-        if (!ScheduleHelper.IsSeasonActive(config)) {
-            // Season is off, stop anything playing and go idle
-            if (fppStatus.IsPlayingPlaylist && playingItem == null) {
-                logger.LogInformation("Season inactive: stopping default playlist");
-                await fppService.StopPlaylistAsync();
-                RecordCommand();
+        // Outside the season or show hours nothing plays on its own and the public can't queue,
+        // but songs requested by friends & family passes still play (that's how you preview the show).
+        if (!ScheduleHelper.IsRunning(config)) {
+            nextPending = await queueService.GetNextPendingAsync(guestOnly: true);
+            if (nextPending == null) {
+                // Stop the default playlist if it's looping; never interrupt a song someone requested.
+                if (fppStatus.IsPlayingPlaylist && playingItem == null) {
+                    logger.LogInformation(ScheduleHelper.IsSeasonActive(config) ? "Outside show hours: stopping default playlist" : "Season inactive: stopping default playlist");
+                    await fppService.StopPlaylistAsync();
+                    RecordCommand();
+                }
+                SetState(playingItem != null ? QueueManagerState.PlayingQueue : QueueManagerState.Idle, SyncStatus.InSync);
+                return;
             }
-            SetState(QueueManagerState.Idle, SyncStatus.InSync);
-            return;
-        }
-
-        var isOpen = ScheduleHelper.IsOpen(config);
-
-        if (!isOpen) {
-            // Outside show hours, stop the default playlist if it's looping, do nothing else.
-            if (fppStatus.IsPlayingPlaylist && playingItem == null) {
-                logger.LogInformation("Outside show hours: stopping default playlist");
-                await fppService.StopPlaylistAsync();
-                RecordCommand();
-            }
-            SetState(QueueManagerState.Idle, SyncStatus.InSync);
-            return;
         }
 
         if (nextPending != null) {

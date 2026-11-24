@@ -1,6 +1,7 @@
 <script setup>
     import { computed, ref } from 'vue';
 
+    import { useGuestStore } from '@/stores/guest';
     import { useShowStore } from '@/stores/show';
 
     import NowPlayingCard from '@/components/NowPlayingCard.vue';
@@ -9,6 +10,7 @@
 
     const showModal = ref(false);
     const showStore = useShowStore();
+    const guest = useGuestStore();
     const queueDepth = computed(() => showStore.queue.filter(q => q.status === 'Pending').length);
 </script>
 
@@ -21,7 +23,7 @@
                 <h2 class="text-main text-xl font-semibold tracking-tight">Queue</h2>
                 <p v-if="queueDepth > 0" class="text-hint text-xs">{{ queueDepth }} song{{ queueDepth !== 1 ? 's' : '' }} waiting</p>
             </div>
-            <button v-if="showStore.config.isOpen" @click="showModal = true" class="btn-ac rounded-lg px-4 py-2 text-sm transition active:scale-95">Request a song</button>
+            <button v-if="showStore.config.isOpen || guest.signedIn" @click="showModal = true" class="btn-ac rounded-lg px-4 py-2 text-sm transition active:scale-95">Request a song</button>
         </div>
 
         <QueueList />

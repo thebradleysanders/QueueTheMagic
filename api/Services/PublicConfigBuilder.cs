@@ -23,6 +23,7 @@ public static class PublicConfigBuilder {
             config.SeasonStart?.ToString("yyyy-MM-dd"),
             config.SeasonEnd?.ToString("yyyy-MM-dd"),
             config.ShowSupporters,
-            config.ListenEnabled);
+            config.ListenEnabled,
+            config.GuestPassesEnabled);
     }
 }

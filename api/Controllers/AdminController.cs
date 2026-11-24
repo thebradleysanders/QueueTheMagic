@@ -23,6 +23,7 @@ public class AdminController(
     ShowControlService showControl,
     CommunityService community,
     AudioRelayService relay,
+    GuestService guests,
     IDbContextFactory<AppDbContext> dbFactory,
     IHubContext<ShowHub> hub) : ControllerBase {
     [EnableRateLimiting("login")]
@@ -67,6 +68,8 @@ public class AdminController(
             return BadRequest(new { error = "Donation goal must be between $0 and $1,000,000." });
         config.DonationGoal = updated.DonationGoal;
         config.ShowSupporters = updated.ShowSupporters;
+        config.GuestPassesEnabled = updated.GuestPassesEnabled;
+        config.GuestMaxSongsPerWindow = Math.Clamp(updated.GuestMaxSongsPerWindow, 1, 200);
         config.ListenEnabled = updated.ListenEnabled;
         config.ListenMaxListeners = Math.Clamp(updated.ListenMaxListeners, 1, 500);
         config.DonationGoalLabel = (updated.DonationGoalLabel ?? string.Empty).Trim() is var gl && gl.Length > 120 ? gl[..120] : gl;
@@ -103,6 +106,33 @@ public class AdminController(
         await community.BroadcastCommunityAsync();
 
         return Ok(config);
+    }
+
+    /// <summary>Friends &amp; family passes (name + sign-in code).</summary>
+    [Authorize]
+    [HttpGet("guests")]
+    public async Task<IActionResult> GetGuests() {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var rows = await db.GuestPasses.OrderBy(g => g.Name).ToListAsync();
+        return Ok(rows.Select(g => new GuestPassDto(g.Id, g.Name, g.Code, g.CreatedAt, g.LastUsedAt, g.RequestCount)));
+    }
+
+    [Authorize]
+    [HttpPost("guests")]
+    public async Task<IActionResult> CreateGuest([FromBody] CreateGuestPassRequest request) {
+        var name = DisplayNameHelper.Clean(request.Name);
+        if (name == null) return BadRequest(new { error = "Enter a name for this guest." });
+        var g = await guests.CreateAsync(name);
+        return Ok(new GuestPassDto(g.Id, g.Name, g.Code, g.CreatedAt, g.LastUsedAt, g.RequestCount));
+    }
+
+    /// <summary>Revokes a pass. Anyone signed in with it is cut off on their next request.</summary>
+    [Authorize]
+    [HttpDelete("guests/{id}")]
+    public async Task<IActionResult> DeleteGuest(int id) {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var n = await db.GuestPasses.Where(g => g.Id == id).ExecuteDeleteAsync();
+        return n == 0 ? NotFound() : Ok();
     }
 
     /// <summary>Is FPP's audio arriving, and how many people are listening?</summary>

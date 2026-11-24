@@ -67,6 +67,21 @@ export const useAdminStore = defineStore('admin', () => {
         return data;
     }
 
+    const guests = ref([]);
+    async function fetchGuests() {
+        const { data } = await axios.get('/api/admin/guests', { headers: authHeaders() });
+        guests.value = data;
+    }
+    async function addGuest(name) {
+        const { data } = await axios.post('/api/admin/guests', { name }, { headers: authHeaders() });
+        guests.value = [...guests.value, data].sort((a, b) => a.name.localeCompare(b.name));
+        return data;
+    }
+    async function deleteGuest(id) {
+        await axios.delete(`/api/admin/guests/${id}`, { headers: authHeaders() });
+        guests.value = guests.value.filter(g => g.id !== id);
+    }
+
     async function fetchReports() {
         const { data } = await axios.get('/api/admin/reports', { headers: authHeaders() });
         reports.value = data;
@@ -141,6 +156,10 @@ export const useAdminStore = defineStore('admin', () => {
         fetchConfig,
         saveConfig,
         setShowMode,
+        guests,
+        fetchGuests,
+        addGuest,
+        deleteGuest,
         resetStats,
         fetchListenStatus,
         supporters,

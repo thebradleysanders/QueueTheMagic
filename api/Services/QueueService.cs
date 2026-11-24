@@ -20,13 +20,14 @@ public class QueueService(IDbContextFactory<AppDbContext> dbFactory, ILogger<Que
     }
 
     /// <summary>Rules a song request must pass. Run before taking payment and again before queuing.</summary>
-    public static async Task<string?> ValidateRequestAsync(AppDbContext db, ShowConfig config, int songId, string sessionToken) {
+    public static async Task<string?> ValidateRequestAsync(AppDbContext db, ShowConfig config, int songId, string sessionToken, int? maxSongs = null) {
+        var limit = maxSongs ?? config.MaxSongsPerWindow;
         var windowStart = DateTime.UtcNow.AddMinutes(-config.RateLimitWindowMinutes);
         var recentCount = await db.QueueItems
             .Where(q => q.SessionToken == sessionToken && q.CreatedAt >= windowStart)
             .CountAsync();
-        if (recentCount >= config.MaxSongsPerWindow)
-            return $"Rate limit: max {config.MaxSongsPerWindow} songs per {config.RateLimitWindowMinutes} minutes.";
+        if (recentCount >= limit)
+            return $"Rate limit: max {limit} songs per {config.RateLimitWindowMinutes} minutes.";
 
         var lastPending = await db.QueueItems
             .Where(q => q.Status == QueueItemStatus.Pending || q.Status == QueueItemStatus.Playing)
@@ -89,6 +90,41 @@ public class QueueService(IDbContextFactory<AppDbContext> dbFactory, ILogger<Que
         return (item, null);
     }
 
+    /// <summary>A free request from a friends &amp; family pass. No payment, and allowed any time.</summary>
+    public async Task<(QueueItem? item, string? error)> AddGuestToQueueAsync(int songId, GuestPass pass) {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var config = await db.ShowConfigs.FindAsync(1) ?? new ShowConfig();
+        var sessionToken = $"guest-{pass.Id}";
+
+        var validationError = await ValidateRequestAsync(db, config, songId, sessionToken, config.GuestMaxSongsPerWindow);
+        if (validationError != null) return (null, validationError);
+
+        var song = (await db.Songs.FindAsync(songId))!;
+        var maxPosition = await db.QueueItems
+            .Where(q => q.Status == QueueItemStatus.Pending || q.Status == QueueItemStatus.Playing)
+            .Select(q => (int?)q.Position)
+            .MaxAsync() ?? 0;
+
+        var item = new QueueItem {
+            SongId = songId,
+            SessionToken = sessionToken,
+            IsGuest = true,
+            Position = maxPosition + 1,
+            Status = QueueItemStatus.Pending
+        };
+        db.QueueItems.Add(item);
+        await db.SaveChangesAsync();
+
+        await mqttService.PublishAsync("songqueued", new {
+            title = song.Title, artist = song.Artist, amount = 0m, guest = true,
+            position = item.Position, timestamp = DateTime.UtcNow
+        });
+        await community.AddActivityAsync("request", song.Title, null, pass.Name);
+
+        logger.LogInformation("Guest '{Guest}' queued '{Title}' at position {Position}", pass.Name, song.Title, item.Position);
+        return (item, null);
+    }
+
     public async Task<(bool success, string? error)> BumpAsync(int queueItemId, string paymentIntentId, string sessionToken, string? displayName = null) {
         await using var db = await dbFactory.CreateDbContextAsync();
         var config = await db.ShowConfigs.FindAsync(1) ?? new ShowConfig();
@@ -123,11 +159,11 @@ public class QueueService(IDbContextFactory<AppDbContext> dbFactory, ILogger<Que
         return (true, null);
     }
 
-    public async Task<QueueItem?> GetNextPendingAsync() {
+    public async Task<QueueItem?> GetNextPendingAsync(bool guestOnly = false) {
         await using var db = await dbFactory.CreateDbContextAsync();
         return await db.QueueItems
             .Include(q => q.Song)
-            .Where(q => q.Status == QueueItemStatus.Pending)
+            .Where(q => q.Status == QueueItemStatus.Pending && (!guestOnly || q.IsGuest))
             .OrderBy(q => q.Position)
             .FirstOrDefaultAsync();
     }

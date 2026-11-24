@@ -114,6 +114,7 @@ builder.Services.AddSingleton<FppService>();
 builder.Services.AddSingleton<MqttService>();
 builder.Services.AddSingleton<ShowControlService>();
 builder.Services.AddSingleton<CommunityService>();
+builder.Services.AddSingleton<GuestService>();
 builder.Services.AddSingleton<AudioRelayService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<AudioRelayService>());
 builder.Services.AddHostedService<MqttControlWorker>();

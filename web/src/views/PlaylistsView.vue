@@ -34,7 +34,7 @@
             <button @click="toggle(playlist.id)" class="bg-card border-base hover:border-strong flex w-full items-center justify-between rounded-xl border px-5 py-4 transition">
                 <div class="text-left">
                     <p class="text-main font-semibold">{{ playlist.name }}</p>
-                    <p class="text-hint mt-0.5 text-xs">{{ playlist.songs.length }} songs</p>
+                    <p class="text-hint mt-0.5 text-xs">{{ playlist.songs.length }} {{ playlist.songs.length === 1 ? 'song' : 'songs' }}</p>
                 </div>
                 <i :class="`pi pi-chevron-${open[playlist.id] ? 'up' : 'down'} text-hint`"></i>
             </button>
