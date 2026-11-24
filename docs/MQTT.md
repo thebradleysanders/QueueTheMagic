@@ -21,7 +21,7 @@ If none of that sounds useful, leave MQTT turned off.
    - tick **Enable MQTT**
    - enter the broker **host** and **port** (default `1883`)
    - enter a username and password if your broker needs them
-   - choose a **topic prefix** (default `qtm`)
+   - choose a **topic prefix** (a new install starts with `xlights`; the examples in this guide use `qtm`, so use whichever you like)
 3. **Save Configuration**, then press **Send Test Message**.
 
 To watch messages arrive from any computer with Mosquitto's tools installed:
@@ -32,7 +32,7 @@ mosquitto_sub -h <broker-ip> -u <user> -P <password> -t 'qtm/#' -v
 
 ## Topics
 
-Every topic is `<prefix>/<event>`. Payloads are JSON. Messages are not retained, so a subscriber only sees events that happen while it is connected.
+Every topic is `<prefix>/<event>`. Payloads are JSON. Messages are not retained (except `status`), so a subscriber only sees events that happen while it is connected.
 
 | Topic | Sent when | Payload |
 |---|---|---|
@@ -160,5 +160,5 @@ mqtt:
 ## Security
 
 - The connection is plain TCP (no TLS), so keep the broker on your local network and don't expose it to the internet.
-- Use a broker username and password, and give them publish-only access to your prefix if your broker supports ACLs.
+- Use a broker username and password. If your broker supports ACLs, allow publishing to `<prefix>/#` and subscribing to `<prefix>/control/show` (that is how the show listens for on/off).
 - The MQTT password is stored in the app's database and is visible to anyone who can log in to admin.
