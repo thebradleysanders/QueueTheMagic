@@ -32,6 +32,7 @@ I often get asked
 - Visitor stats: visits and unique devices (anonymous), per day, in the admin Reports tab
 - Admin dashboard: config, reports, live queue, diagnostics
 - MQTT event publishing (optional) for phone alerts, Home Assistant, signs and more. **[See the MQTT guide](docs/MQTT.md)**
+- "Listen live" phone audio in sync with the lights, relayed from FPP with no port forwarding (optional). **[See the Listen guide](docs/LISTEN.md)**
     - ```test``` - When the test button is clicked in the UI.
     - ```donation``` - When a 'Just because' donation occurs.
     - ```nowplaying``` - When now playing changes.
@@ -86,7 +87,7 @@ docker compose up -d
 
 ### 3. First-time setup
 
-1. Open `http://your-server-ip` — the public site is live
+1. Open `http://your-server-ip` and the public site is live
 2. Go to `http://your-server-ip/admin` and log in with your `AdminPassword`
 3. In **Config → Falcon Player (FPP)**:
    - Verify the FPP Address matches your player
@@ -119,11 +120,11 @@ All configuration is passed via environment variables, no config files to edit.
 
 | Variable | Default | Description |
 |---|---|---|
-| `Stripe__SecretKey` | — | Stripe secret key (server-side) |
-| `Stripe__PublishableKey` | — | Stripe publishable key (returned to frontend via API) |
-| `AdminPassword` | — | Password for `/admin` login. **Required**, min 8 characters |
-| `Jwt__Secret` | — | Token signing secret. **Required**, min 32 characters, keep private (`openssl rand -base64 48`) |
-| `AllowedOrigins` | `https://localhost` | CORS origin — your domain or IP |
+| `Stripe__SecretKey` | - | Stripe secret key (server-side) |
+| `Stripe__PublishableKey` | - | Stripe publishable key (returned to frontend via API) |
+| `AdminPassword` | - | Password for `/admin` login. **Required**, min 8 characters |
+| `Jwt__Secret` | - | Token signing secret. **Required**, min 32 characters, keep private (`openssl rand -base64 48`) |
+| `AllowedOrigins` | `https://localhost` | CORS origin (your domain or IP) |
 
 > In production the app **refuses to start** if `AdminPassword` or `Jwt__Secret` is missing, too short, or a well-known placeholder (`changeme`, `change-this…`). This is deliberate, so a live site can never run with default credentials.
 

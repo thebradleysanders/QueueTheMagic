@@ -5,7 +5,7 @@ using XlightsQueue.Models;
 
 namespace XlightsQueue.Services;
 
-public class QueueService(IDbContextFactory<AppDbContext> dbFactory, ILogger<QueueService> logger, MqttService mqttService) {
+public class QueueService(IDbContextFactory<AppDbContext> dbFactory, ILogger<QueueService> logger, MqttService mqttService, CommunityService community) {
     public async Task<List<QueueItemDto>> GetQueueAsync() {
         await using var db = await dbFactory.CreateDbContextAsync();
         return await db.QueueItems
@@ -41,7 +41,7 @@ public class QueueService(IDbContextFactory<AppDbContext> dbFactory, ILogger<Que
         return null;
     }
 
-    public async Task<(QueueItem? item, string? error)> AddToQueueAsync(int songId, string paymentIntentId, string sessionToken) {
+    public async Task<(QueueItem? item, string? error)> AddToQueueAsync(int songId, string paymentIntentId, string sessionToken, string? displayName = null) {
         await using var db = await dbFactory.CreateDbContextAsync();
         var config = await db.ShowConfigs.FindAsync(1) ?? new ShowConfig();
 
@@ -59,7 +59,8 @@ public class QueueService(IDbContextFactory<AppDbContext> dbFactory, ILogger<Que
             StripePaymentIntentId = paymentIntentId,
             Amount = config.SongRequestCost,
             Type = DonationType.SongRequest,
-            SessionToken = sessionToken
+            SessionToken = sessionToken,
+            DisplayName = DisplayNameHelper.Clean(displayName)
         };
         db.Donations.Add(donation);
         await db.SaveChangesAsync();
@@ -73,7 +74,7 @@ public class QueueService(IDbContextFactory<AppDbContext> dbFactory, ILogger<Que
         };
         db.QueueItems.Add(item);
         await db.SaveChangesAsync();
-        // Public-safe payload only — never publish session tokens or Stripe IDs to the broker.
+        // Public-safe payload only, never publish session tokens or Stripe IDs to the broker.
         await mqttService.PublishAsync("songqueued", new {
             title = song.Title,
             artist = song.Artist,
@@ -82,11 +83,13 @@ public class QueueService(IDbContextFactory<AppDbContext> dbFactory, ILogger<Que
             timestamp = DateTime.UtcNow
         });
 
+        await community.AddActivityAsync("request", song.Title, donation.Amount, donation.DisplayName);
+
         logger.LogInformation("Added '{Title}' to queue at position {Position}", song.Title, item.Position);
         return (item, null);
     }
 
-    public async Task<(bool success, string? error)> BumpAsync(int queueItemId, string paymentIntentId, string sessionToken) {
+    public async Task<(bool success, string? error)> BumpAsync(int queueItemId, string paymentIntentId, string sessionToken, string? displayName = null) {
         await using var db = await dbFactory.CreateDbContextAsync();
         var config = await db.ShowConfigs.FindAsync(1) ?? new ShowConfig();
 
@@ -106,12 +109,15 @@ public class QueueService(IDbContextFactory<AppDbContext> dbFactory, ILogger<Que
             StripePaymentIntentId = paymentIntentId,
             Amount = config.BumpCost,
             Type = DonationType.Bump,
-            SessionToken = sessionToken
+            SessionToken = sessionToken,
+            DisplayName = DisplayNameHelper.Clean(displayName)
         };
         db.Donations.Add(donation);
 
         (item.Position, above.Position) = (above.Position, item.Position);
         await db.SaveChangesAsync();
+
+        await community.AddActivityAsync("boost", item.Song.Title, donation.Amount, donation.DisplayName);
 
         logger.LogInformation("Bumped '{Title}' up to position {Position}", item.Song.Title, item.Position);
         return (true, null);

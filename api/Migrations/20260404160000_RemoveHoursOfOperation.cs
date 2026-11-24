@@ -8,7 +8,7 @@ namespace XlightsQueue.Migrations
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // SQLite does not support DROP COLUMN — columns are left in the DB but
+            // SQLite does not support DROP COLUMN, columns are left in the DB but
             // are no longer mapped in the model and will be ignored by EF Core.
         }
 

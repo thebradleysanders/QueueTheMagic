@@ -9,10 +9,16 @@ namespace XlightsQueue.Services;
 
 public class MqttService(IDbContextFactory<AppDbContext> dbFactory, ILogger<MqttService> logger) : IAsyncDisposable {
     private IMqttClient? _client;
-    private string _lastBrokerHost = string.Empty;
+    private string _lastConnectionKey = string.Empty;
+
+    /// <summary>Raised when a message arrives on <c>&lt;prefix&gt;/control/show</c> (payload: on | off | auto).</summary>
+    public event Func<string, Task>? ShowControlReceived;
+
+    /// <summary>Keeps the broker connection (and the control subscription) alive. Called periodically by the worker.</summary>
+    public Task EnsureConnectedAsync() => GetConnectedClientAsync();
     private bool _disposed;
 
-    public async Task PublishAsync(string subtopic, object payload) {
+    public async Task PublishAsync(string subtopic, object payload, bool retain = false) {
         try {
             var client = await GetConnectedClientAsync();
             if (client == null) return;
@@ -26,7 +32,7 @@ public class MqttService(IDbContextFactory<AppDbContext> dbFactory, ILogger<Mqtt
             var msg = new MqttApplicationMessageBuilder()
                 .WithTopic(topic)
                 .WithPayload(Encoding.UTF8.GetBytes(json))
-                .WithRetainFlag(false)
+                .WithRetainFlag(retain)
                 .Build();
 
             await client.PublishAsync(msg);
@@ -41,12 +47,13 @@ public class MqttService(IDbContextFactory<AppDbContext> dbFactory, ILogger<Mqtt
         if (config == null || !config.MqttEnabled) return null;
 
         // Reconnect if broker changed or disconnected
-        if (_client == null || !_client.IsConnected || _lastBrokerHost != config.MqttBrokerHost) {
+        if (_client == null || !_client.IsConnected || _lastConnectionKey != ConnectionKey(config)) {
             _client?.Dispose();
             _client = null;
 
             var factory = new MqttFactory();
             _client = factory.CreateMqttClient();
+            _client.ApplicationMessageReceivedAsync += OnMessageAsync;
 
             var optionsBuilder = new MqttClientOptionsBuilder()
                 .WithTcpServer(config.MqttBrokerHost, config.MqttBrokerPort)
@@ -58,7 +65,9 @@ public class MqttService(IDbContextFactory<AppDbContext> dbFactory, ILogger<Mqtt
 
             try {
                 await _client.ConnectAsync(optionsBuilder.Build());
-                _lastBrokerHost = config.MqttBrokerHost;
+                await _client.SubscribeAsync(new MqttClientSubscribeOptionsBuilder()
+                    .WithTopicFilter($"{config.MqttTopicPrefix}/control/show").Build());
+                _lastConnectionKey = ConnectionKey(config);
                 logger.LogInformation("MQTT connected to {Host}:{Port}", config.MqttBrokerHost, config.MqttBrokerPort);
             } catch (Exception ex) {
                 logger.LogWarning("MQTT connection failed: {Message}", ex.Message);
@@ -69,6 +78,25 @@ public class MqttService(IDbContextFactory<AppDbContext> dbFactory, ILogger<Mqtt
         }
 
         return _client;
+    }
+
+    private static string ConnectionKey(Models.ShowConfig c) =>
+        $"{c.MqttBrokerHost}|{c.MqttBrokerPort}|{c.MqttUsername}|{c.MqttPassword}|{c.MqttTopicPrefix}";
+
+    private async Task OnMessageAsync(MqttApplicationMessageReceivedEventArgs e) {
+        try {
+            var text = Encoding.UTF8.GetString(e.ApplicationMessage.PayloadSegment).Trim();
+            // Accept a bare word ("on") or JSON ({"mode":"on"}).
+            if (text.StartsWith('{')) {
+                using var doc = JsonDocument.Parse(text);
+                text = doc.RootElement.TryGetProperty("mode", out var m) ? m.GetString() ?? "" : "";
+            }
+            text = text.Trim('"');
+            var handler = ShowControlReceived;
+            if (handler != null) await handler(text);
+        } catch (Exception ex) {
+            logger.LogWarning("MQTT control message failed: {Message}", ex.Message);
+        }
     }
 
     public async ValueTask DisposeAsync() {

@@ -1,10 +1,12 @@
 <script setup>
+    import SupporterNameField from '@/components/SupporterNameField.vue';
+    import { useSupporterName } from '@/composables/useSupporterName';
+    import Celebrate from '@/components/Celebrate.vue';
     import axios from 'axios';
 
     import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 
     import { usePayment } from '@/composables/usePayment';
-    import { useSeason } from '@/composables/useSeason';
 
     import { useSessionStore } from '@/stores/session';
     import { useShowStore } from '@/stores/show';
@@ -14,8 +16,8 @@
     const emit = defineEmits(['close']);
     const showStore = useShowStore();
     const sessionStore = useSessionStore();
+    const { displayName } = useSupporterName();
     const { createIntent, mountPaymentElement, confirmPayment } = usePayment();
-    const { season } = useSeason();
 
     // How long until a song requested right now would play.
     const songsAhead = computed(() => showStore.queue.length);
@@ -74,7 +76,8 @@
                 await axios.post('/api/queue', {
                     songId: selectedSong.value.id,
                     paymentIntentId: 'dev_test',
-                    sessionToken: sessionStore.sessionToken
+                    sessionToken: sessionStore.sessionToken,
+                    displayName: displayName.value
                 });
                 await showStore.fetchQueue();
                 step.value = 'done';
@@ -100,7 +103,8 @@
             await axios.post('/api/queue', {
                 songId: selectedSong.value.id,
                 paymentIntentId,
-                sessionToken: sessionStore.sessionToken
+                sessionToken: sessionStore.sessionToken,
+                displayName: displayName.value
             });
             await showStore.fetchQueue();
             step.value = 'done';
@@ -114,7 +118,7 @@
 
 <template>
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-label="Request a song" @click.self="emit('close')">
-        <div class="bg-card border-base w-full max-w-lg overflow-hidden rounded-2xl border md:max-w-2xl">
+        <div class="bg-card border-base w-full max-w-lg overflow-hidden rounded-xl border md:max-w-2xl">
             <!-- Header -->
             <div class="border-base flex items-center justify-between border-b px-5 py-4">
                 <div class="flex items-center gap-2">
@@ -122,7 +126,7 @@
                         <font-awesome-icon :icon="['fas', 'chevron-left']" />
                     </button>
                     <div>
-                        <h2 class="text-main text-base leading-tight font-bold">
+                        <h2 class="text-main text-base leading-tight font-semibold">
                             <font-awesome-icon v-if="!selectedPlaylist" :icon="['fas', 'music']" />
                             {{ selectedPlaylist ? selectedPlaylist.name : 'Pick a Song' }}
                         </h2>
@@ -136,17 +140,17 @@
 
             <!-- Queue wait estimate -->
             <div v-if="step === 'select'" class="border-base border-b px-5 py-2.5 text-xs" :class="longWait ? 'bg-ac3-soft text-ac3' : 'text-sub'">
-                <template v-if="songsAhead === 0">✨ The queue is empty — your song plays next!</template>
+                <template v-if="songsAhead === 0">The queue is empty. Your song plays next.</template>
                 <template v-else>
-                    ⏱ {{ songsAhead }} {{ songsAhead === 1 ? 'song' : 'songs' }} ahead of you · about {{ waitMinutes }} min wait
-                    <span v-if="longWait" class="block opacity-80">It's a busy night! You can boost your song up the queue after requesting it.</span>
+                    {{ songsAhead }} {{ songsAhead === 1 ? 'song' : 'songs' }} ahead of you · about {{ waitMinutes }} min wait
+                    <span v-if="longWait" class="block opacity-80">Busy night. You can boost your song up the queue after requesting it.</span>
                 </template>
             </div>
 
             <!-- Step: select playlist -->
             <div v-if="step === 'select' && !selectedPlaylist" class="max-h-[65vh] space-y-2 overflow-y-auto p-4">
                 <div v-if="errorMsg" class="mb-1 rounded-xl bg-red-500/20 p-3 text-sm text-red-500">{{ errorMsg }}</div>
-                <button v-for="p in playlists" :key="p.id" @click="pickPlaylist(p)" class="bg-lift hover:bg-inset border-base hover:border-strong flex w-full items-center gap-3 rounded-2xl border px-4 py-4 text-left transition active:scale-98">
+                <button v-for="p in playlists" :key="p.id" @click="pickPlaylist(p)" class="bg-lift hover:bg-inset border-base hover:border-strong flex w-full items-center gap-3 rounded-xl border px-4 py-4 text-left transition active:scale-98">
                     <font-awesome-icon v-if="p.songs.length === 0" :icon="['fas', 'exclamation-triangle']" class="text-yellow-500" />
                     <font-awesome-icon v-else :icon="['fas', 'music']" />
                     <div>
@@ -186,30 +190,31 @@
             <div v-if="step === 'payment'" class="p-5">
                 <div v-if="errorMsg" class="mb-3 rounded-xl bg-red-500/20 p-3 text-sm text-red-400">{{ errorMsg }}</div>
                 <div ref="paymentElementRef"></div>
-                <button @click="submitPayment" :disabled="loading" class="btn-ac mt-4 w-full rounded-2xl py-4 text-base font-bold transition active:scale-95 disabled:opacity-40">
-                    {{ loading ? '⏳ Processing...' : `🎵 Pay $${showStore.config.songRequestCost}` }}
+                <button @click="submitPayment" :disabled="loading" class="btn-ac mt-4 w-full rounded-xl py-4 text-base font-semibold transition active:scale-95 disabled:opacity-40">
+                    {{ loading ? 'Processing…' : `Pay $${showStore.config.songRequestCost}` }}
                 </button>
             </div>
 
             <!-- Step: paying -->
             <div v-if="step === 'paying'" class="p-8 text-center">
-                <div class="mb-3 animate-spin text-4xl">💫</div>
+                <div class="border-strong border-t-ac1 mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2" style="border-top-color: rgb(var(--ac1))"></div>
                 <p class="text-sub font-medium">Processing payment...</p>
             </div>
 
             <!-- Step: done -->
             <div v-if="step === 'done'" class="p-8 text-center">
-                <div class="mb-4 text-5xl">🎉</div>
-                <p class="text-main text-xl font-bold">You're in the queue!</p>
+                <Celebrate :count="28" :spread="140"><font-awesome-icon :icon="['fas', 'check']" class="text-ac1 mb-4 text-3xl" /></Celebrate>
+                <p class="text-main text-xl font-semibold">You're in the queue!</p>
                 <p class="text-hint mt-1 mb-1 text-sm">{{ selectedSong?.title }}</p>
                 <p class="text-ghost text-xs">Watch the queue to see when you're up next</p>
-                <button @click="emit('close')" class="btn-ac mt-5 rounded-2xl px-8 py-3 text-sm font-semibold transition active:scale-95">Awesome! {{ season.emoji }}</button>
+                <button @click="emit('close')" class="btn-ac mt-5 rounded-xl px-8 py-3 text-sm font-semibold transition active:scale-95">Done</button>
             </div>
 
             <!-- Pay button -->
-            <div v-if="step === 'select' && selectedPlaylist" class="px-4 pt-2 pb-5">
-                <button @click="pay" :disabled="!selectedSong || loading" class="btn-ac w-full rounded-2xl py-4 text-base font-bold transition active:scale-95 disabled:opacity-40">
-                    {{ loading ? '⏳ Processing...' : selectedSong ? (isDev ? `⚡ Queue "${selectedSong.title}" (dev)` : `🎵 Queue Song — $${showStore.config.songRequestCost}`) : 'Select a song above' }}
+            <div v-if="step === 'select' && selectedPlaylist" class="space-y-3 px-4 pt-2 pb-5">
+                <SupporterNameField v-if="selectedSong" />
+                <button @click="pay" :disabled="!selectedSong || loading" class="btn-ac w-full rounded-xl py-4 text-base font-semibold transition active:scale-95 disabled:opacity-40">
+                    {{ loading ? 'Processing…' : selectedSong ? (isDev ? `Queue "${selectedSong.title}" (dev)` : `Request song · $${showStore.config.songRequestCost}`) : 'Select a song above' }}
                 </button>
             </div>
         </div>

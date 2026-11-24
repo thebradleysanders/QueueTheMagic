@@ -1,8 +1,8 @@
 namespace XlightsQueue.DTOs;
 
-public record AddToQueueRequest(int SongId, string PaymentIntentId, string SessionToken);
-public record DonateRequest(string PaymentIntentId, string SessionToken, decimal Amount);
-public record BumpQueueRequest(string PaymentIntentId, string SessionToken);
+public record AddToQueueRequest(int SongId, string PaymentIntentId, string SessionToken, string? DisplayName = null);
+public record DonateRequest(string PaymentIntentId, string SessionToken, decimal Amount, string? DisplayName = null);
+public record BumpQueueRequest(string PaymentIntentId, string SessionToken, string? DisplayName = null);
 public record CreatePaymentIntentRequest(string Type, int? SongId, string SessionToken, decimal? Amount = null);
 public record AdminLoginRequest(string Password);
 
@@ -46,9 +46,20 @@ public record PublicConfigDto(
     List<ShowScheduleEntryDto> ShowSchedule,
     bool IsSeasonActive,
     string OffSeasonMessage,
-    string StripePublishableKey
+    string StripePublishableKey,
+    string ShowMode = "auto",
+    string? SeasonStart = null,
+    string? SeasonEnd = null,
+    bool ShowSupporters = true,
+    bool ListenEnabled = false
 );
 
+public record ShowModeRequest(string Mode);
+public record CheerRequest(string SessionToken);
+public record ActivityDto(string Kind, string? Title, decimal? Amount, DateTime At, string? Name = null);
+public record SupporterDto(string? Name, decimal Amount, string Kind, DateTime At);
+public record AdminSupporterDto(int Id, string? Name, decimal Amount, string Kind, DateTime At);
+public record CommunityDto(decimal Raised, int Supporters, decimal Goal, string GoalLabel, int CheersToday, int WatchingTonight, IReadOnlyList<ActivityDto> Recent);
 public record SocialLinkDto(string Platform, string Url);
 public record ShowScheduleEntryDto(string Day, string Start, string End, bool Enabled);
 

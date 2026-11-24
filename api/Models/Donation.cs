@@ -8,5 +8,8 @@ public class Donation {
     public decimal Amount { get; set; }
     public DonationType Type { get; set; }
     public string SessionToken { get; set; } = string.Empty;
+
+    /// <summary>Name the supporter chose for the public supporters list. Null = anonymous.</summary>
+    public string? DisplayName { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

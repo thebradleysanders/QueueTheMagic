@@ -8,12 +8,16 @@ services:
     container_name: qtm
     ports:
       - "${APP_PORT:-80}:${APP_PORT:-80}"
+      # Listen live (optional): FPP sends Opus RTP audio here. LAN only, do NOT port-forward it.
+      - "${LISTEN_RTP_PORT:-5004}:${LISTEN_RTP_PORT:-5004}/udp"
     environment:
       - Stripe__SecretKey=${STRIPE_SECRET_KEY}
       - Stripe__PublishableKey=${STRIPE_PUBLISHABLE_KEY}
       - AdminPassword=${ADMIN_PASSWORD}
       - Jwt__Secret=${JWT_SECRET}
       - AllowedOrigins=${ALLOWED_ORIGINS:-http://localhost}
+      - TZ=${TZ:-UTC}
+      - Listen__RtpPort=${LISTEN_RTP_PORT:-5004}
     volumes:
       - qtm-data:/app/data
     restart: unless-stopped

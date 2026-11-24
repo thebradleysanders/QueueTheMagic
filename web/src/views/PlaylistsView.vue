@@ -26,7 +26,7 @@
 
 <template>
     <main class="mx-auto max-w-2xl px-4 py-8 md:max-w-3xl md:px-8">
-        <h1 class="text-main mb-6 text-2xl font-bold">Song Library</h1>
+        <h1 class="text-main mb-5 text-xl font-semibold tracking-tight">Song library</h1>
 
         <div v-if="playlists.length === 0" class="text-hint py-12 text-center">No songs available. Admin: run sync-songs to import from FPP.</div>
 

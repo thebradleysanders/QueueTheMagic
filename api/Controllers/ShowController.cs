@@ -15,6 +15,7 @@ public class ShowController(
     QueueManagerService queueManager,
     FppService fppService,
     MqttService mqttService,
+    CommunityService community,
     IConfiguration configuration) : ControllerBase {
     // A device that re-opens the site within this window counts as the same visit
     // (stops refresh-spam inflating stats and flooding MQTT).
@@ -49,6 +50,27 @@ public class ShowController(
         return Ok(new { counted = true });
     }
 
+    /// <summary>Donation goal, cheers, audience size and the recent activity feed.</summary>
+    [HttpGet("community")]
+    public async Task<IActionResult> GetCommunity() => Ok(await community.GetCommunityAsync());
+
+    /// <summary>This season's supporters (names are opt-in, everyone else is Anonymous). 404 when switched off.</summary>
+    [HttpGet("supporters")]
+    public async Task<IActionResult> GetSupporters([FromQuery] int limit = 50) {
+        var list = await community.GetSupportersAsync(limit);
+        return list == null ? NotFound(new { error = "The supporters list is turned off." }) : Ok(list);
+    }
+
+    /// <summary>A free "cheer" from the audience. Pushed live to every phone and to MQTT.</summary>
+    [EnableRateLimiting("cheer")]
+    [HttpPost("cheer")]
+    public async Task<IActionResult> Cheer([FromBody] CheerRequest request) {
+        if (string.IsNullOrWhiteSpace(request.SessionToken) || request.SessionToken.Length > 64)
+            return BadRequest(new { error = "Invalid session." });
+        var total = await community.CheerAsync(request.SessionToken);
+        return total == null ? StatusCode(429, new { error = "Easy there! One cheer at a time." }) : Ok(new { cheersToday = total });
+    }
+
     [HttpGet("nowplaying")]
     public async Task<IActionResult> GetNowPlaying() {
         await using var db = await dbFactory.CreateDbContextAsync();
@@ -73,19 +95,7 @@ public class ShowController(
                     item.StartedAt, true, diag.State, played, remaining, item.Song.Id);
         }
 
-        var jsonOpts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-        var socialLinks = new List<SocialLinkDto>();
-        try { socialLinks = JsonSerializer.Deserialize<List<SocialLinkDto>>(config.SocialMediaJson, jsonOpts) ?? []; } catch { }
-
-        var schedule = new List<ShowScheduleEntryDto>();
-        try { schedule = JsonSerializer.Deserialize<List<ShowScheduleEntryDto>>(config.ShowScheduleJson, jsonOpts) ?? []; } catch { }
-
-        bool isOpen = ScheduleHelper.IsOpen(config.ShowScheduleJson);
-        var publicConfig = new PublicConfigDto(
-            config.SiteName, config.FmRadioStation, socialLinks, config.DefaultTheme,
-            config.SongRequestCost, config.BumpCost, config.DonateCost,
-            isOpen, schedule, config.IsSeasonActive, config.OffSeasonMessage,
-            configuration["Stripe:PublishableKey"] ?? string.Empty);
+        var publicConfig = PublicConfigBuilder.Build(config, configuration["Stripe:PublishableKey"] ?? string.Empty);
 
         return Ok(new { nowPlaying, config = publicConfig });
     }

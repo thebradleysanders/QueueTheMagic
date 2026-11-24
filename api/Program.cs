@@ -70,6 +70,10 @@ builder.Services.AddRateLimiter(options => {
     options.AddPolicy("rating", ctx => PerIp(ctx, 30, TimeSpan.FromMinutes(1)));
     // Visit counter: generous (many phones can share one yard Wi-Fi / carrier NAT) but bounded
     options.AddPolicy("visit", ctx => PerIp(ctx, 60, TimeSpan.FromMinutes(1)));
+    // Cheers: per-device cooldown is enforced in CommunityService; this caps a single network
+    options.AddPolicy("cheer", ctx => PerIp(ctx, 120, TimeSpan.FromMinutes(1)));
+    // Live audio signalling
+    options.AddPolicy("listen", ctx => PerIp(ctx, 20, TimeSpan.FromMinutes(1)));
 });
 
 // nginx (127.0.0.1) sits in front of Kestrel and sets X-Forwarded-For.
@@ -108,6 +112,11 @@ StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"] ?? string
 // Services
 builder.Services.AddSingleton<FppService>();
 builder.Services.AddSingleton<MqttService>();
+builder.Services.AddSingleton<ShowControlService>();
+builder.Services.AddSingleton<CommunityService>();
+builder.Services.AddSingleton<AudioRelayService>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<AudioRelayService>());
+builder.Services.AddHostedService<MqttControlWorker>();
 builder.Services.AddSingleton<AdminAuthService>();
 builder.Services.AddSingleton<PaymentService>();
 builder.Services.AddSingleton<QueueService>();
@@ -125,6 +134,7 @@ using (var scope = app.Services.CreateScope()) {
 }
 
 app.UseForwardedHeaders();
+app.UseWebSockets(new WebSocketOptions { KeepAliveInterval = TimeSpan.FromSeconds(20) });
 app.UseCors();
 app.UseRateLimiter();
 app.UseAuthentication();

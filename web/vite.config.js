@@ -15,7 +15,7 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': 'http://localhost:5288',
+      '/api': { target: 'http://localhost:5288', ws: true },
       '/showHub': {
         target: 'http://localhost:5288',
         ws: true,

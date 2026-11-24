@@ -11,12 +11,17 @@
     import { useSessionStore } from '@/stores/session';
     import { useShowStore } from '@/stores/show';
 
-    import SeasonDecor from '@/components/SeasonDecor.vue';
+    import ActivityToasts from '@/components/ActivityToasts.vue';
+    import LightString from '@/components/LightString.vue';
     import StarLogo from '@/components/StarLogo.vue';
+    import { useCommunityStore } from '@/stores/community';
+    import { useListenStore } from '@/stores/listen';
 
     import { version } from '../package.json';
 
     const showStore = useShowStore();
+    const community = useCommunityStore();
+    const listen = useListenStore();
     const sessionStore = useSessionStore();
     useSignalR();
 
@@ -28,16 +33,37 @@
     useTheme();
     const { season } = useSeason();
 
+    // "Opens Dec 1" for the splash when the season hasn't started yet
+    function fmtDate(iso) {
+        if (!iso) return null;
+        const [y, m, d] = iso.split('-').map(Number);
+        return new Date(y, m - 1, d).toLocaleDateString(undefined, { month: 'long', day: 'numeric' });
+    }
+    const opensOn = computed(() => {
+        const c = showStore.config;
+        if (c.showMode === 'off' || !c.seasonStart) return null;
+        const today = new Date();
+        const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        return c.seasonStart > iso ? fmtDate(c.seasonStart) : null;
+    });
+
     onMounted(() => {
         recordVisit();
         showStore.fetchNowPlaying();
         showStore.fetchQueue();
+        if (!isAdmin.value) community.fetchCommunity();
     });
 
     const route = useRoute();
     const isAdmin = computed(() => route.path.startsWith('/admin'));
     const pendingCount = computed(() => showStore.queue.filter(q => q.status === 'Pending').length);
     const isDark = computed(() => true);
+    const tabs = [
+        { to: '/', label: 'Home', icon: 'house' },
+        { to: '/queue', label: 'Queue', icon: 'list-ol' },
+        { to: '/playlists', label: 'Songs', icon: 'music' },
+        { to: '/info', label: 'Info', icon: 'circle-info' }
+    ];
 
     const platformIcon = {
         facebook: 'pi-facebook',
@@ -49,7 +75,7 @@
         discord: 'pi-discord',
         twitch: 'pi-twitch'
     };
-    // Only render http(s) links — a stored "javascript:" URL must never become a clickable href.
+    // Only render http(s) links. A stored "javascript:" URL must never become a clickable href.
     const socialLinks = computed(() => (showStore.config.socialLinks ?? []).filter(l => /^https?:\/\//i.test(l?.url ?? '')));
     const platformColor = {
         facebook: '#4267B2',
@@ -73,54 +99,57 @@
 
 <template>
     <div class="bg-base text-main flex min-h-screen flex-col">
-        <SeasonDecor v-if="!isAdmin" variant="particles" />
         <!-- Top bar (public) -->
-        <div v-if="!isAdmin" class="sticky top-0 z-30"><header class="bg-card border-base flex items-center justify-between border-b px-4 pt-6 pb-2 shadow-2xl md:px-8 md:pt-4 md:pb-3">
-            <div class="flex items-center gap-2 md:gap-3">
-                <StarLogo class="text-3xl leading-none md:text-4xl" />
-                <div class="min-w-0">
-                    <span class="text-main block truncate text-base leading-tight font-bold md:text-2xl">{{ showStore.config.siteName }}</span>
-                    <span class="text-ac1-strong hidden text-[10px] font-semibold tracking-widest uppercase sm:block">{{ season.tagline }}</span>
+        <div v-if="!isAdmin" class="nav-bg sticky top-0 z-30 backdrop-blur">
+            <header class="flex items-center justify-between px-4 pt-3 md:px-8">
+                <div class="flex min-w-0 items-center gap-2.5">
+                    <StarLogo class="text-ac3 star-glow shrink-0 text-2xl" />
+                    <div class="min-w-0">
+                        <span class="text-main block truncate text-base leading-tight font-bold tracking-tight md:text-lg">{{ showStore.config.siteName }}</span>
+                        <span class="text-ac1 block text-[10px] font-semibold tracking-[0.18em] uppercase">{{ season.tagline }}</span>
+                    </div>
                 </div>
-            </div>
-            <div class="flex items-center gap-6 md:gap-4">
-                <RouterLink to="/admin/login" class="hover:text-hint !text-blue-300" aria-label="Admin login">
-                    <font-awesome-icon :icon="['fas', 'user-gear']" class="text-lg md:text-2xl" />
-                </RouterLink>
-            </div>
-        </header>
-        <SeasonDecor variant="lights" />
+                <div class="flex items-center gap-1">
+                    <button v-if="listen.state === 'playing'" @click="listen.stop()" class="bg-ac1-soft text-ac1 flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold" aria-label="Stop listening">
+                        <font-awesome-icon :icon="['fas', 'headphones']" /> Live
+                        <font-awesome-icon :icon="['fas', 'xmark']" class="opacity-70" />
+                    </button>
+                    <RouterLink to="/admin/login" class="text-hint hover:text-main p-2 transition" aria-label="Admin login">
+                        <font-awesome-icon :icon="['fas', 'user-gear']" class="text-base" />
+                    </RouterLink>
+                </div>
+            </header>
+            <LightString />
         </div>
+        <ActivityToasts v-if="!isAdmin && showStore.config.isSeasonActive" />
 
-        <!-- Admin top bar (always dark) -->
+        <!-- Admin top bar -->
         <header v-if="isAdmin" class="flex items-center gap-4 border-b border-gray-800 bg-gray-900 px-4 py-3">
             <RouterLink to="/" class="text-lg font-bold text-green-400">{{ showStore.config.siteName }}</RouterLink>
         </header>
 
         <!-- Off-season splash -->
         <div v-if="!isAdmin && !showStore.config.isSeasonActive" class="flex flex-1 flex-col items-center justify-center px-6 py-16 text-center">
-            <div class="mb-6 text-7xl">{{ season.emoji }}</div>
-            <h1 class="text-main mb-3 text-2xl font-black">{{ showStore.config.siteName }}</h1>
-            <p class="text-sub mb-8 max-w-sm text-base leading-relaxed">
+            <StarLogo class="text-ac3 star-glow mb-6 text-6xl" />
+            <h1 class="text-main mb-2 text-2xl font-semibold tracking-tight">{{ showStore.config.siteName }}</h1>
+            <p v-if="opensOn" class="text-ac1 mb-3 text-sm font-semibold">Opens {{ opensOn }}</p>
+            <p class="text-sub mb-8 max-w-sm text-sm leading-relaxed">
                 {{ showStore.config.offSeasonMessage || 'The light show is not running right now. Check back soon!' }}
             </p>
-            <div v-if="socialLinks.length" class="flex flex-wrap items-center justify-center gap-4">
+            <div v-if="socialLinks.length" class="flex flex-wrap items-center justify-center gap-3">
                 <a
                     v-for="link in socialLinks"
                     :key="link.platform"
                     :href="link.url"
                     target="_blank"
                     rel="noopener"
-                    class="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition hover:opacity-80 active:scale-95"
-                    :style="`color: ${colorFor(link.platform)}; background: ${colorFor(link.platform)}18; border: 1px solid ${colorFor(link.platform)}40`"
+                    class="btn-quiet flex items-center gap-2 rounded-lg px-4 py-2 text-sm"
                 >
-                    <i :class="`pi ${iconFor(link.platform)} text-base`"></i>
+                    <i :class="`pi ${iconFor(link.platform)}`"></i>
                     <span>{{ link.platform }}</span>
                 </a>
             </div>
-            <RouterLink to="/admin/login" class="text-ghost hover:text-hint mt-12 text-xs">
-                <font-awesome-icon :icon="['fas', 'user-gear']" class="text-lg md:text-2xl" /> Admin Login
-            </RouterLink>
+            <RouterLink to="/admin/login" class="text-hint hover:text-main mt-12 text-xs">Admin login</RouterLink>
         </div>
 
         <!-- Main content -->
@@ -130,34 +159,19 @@
 
         <!-- Bottom nav (public only, season active) -->
         <nav v-if="!isAdmin && showStore.config.isSeasonActive" class="nav-bg nav-border fixed inset-x-0 bottom-0 z-40 border-t backdrop-blur">
-            <!-- Social links strip -->
-            <div v-if="socialLinks.length" class="border-base flex items-center justify-center gap-5 border-b bg-white/4 py-2">
-                <a v-for="link in socialLinks" :key="link.platform" :href="link.url" target="_blank" rel="noopener" class="flex items-center gap-2 text-xs font-medium transition hover:opacity-80 active:scale-95" :style="`color: ${colorFor(link.platform)}`">
-                    <i :class="`pi ${iconFor(link.platform)} !text-xl`"></i>
-                    <span class="text-hint text-xs">{{ link.platform }}</span>
+            <div v-if="socialLinks.length" class="border-base flex items-center justify-center gap-5 border-b py-2">
+                <a v-for="link in socialLinks" :key="link.platform" :href="link.url" target="_blank" rel="noopener" class="text-hint hover:text-main flex items-center gap-1.5 text-xs transition">
+                    <i :class="`pi ${iconFor(link.platform)}`"></i>
+                    <span>{{ link.platform }}</span>
                 </a>
             </div>
-
-            <!-- Tab bar -->
-            <div class="flex">
-                <RouterLink to="/" class="flex flex-1 flex-col items-center gap-1 py-2.5 text-xs transition" :class="route.path === '/' ? 'text-ac1' : 'text-hint hover:text-sub'">
-                    <font-awesome-icon :icon="['fas', 'house']" class="text-lg leading-none" />
-                    <span>Home</span>
-                </RouterLink>
-                <RouterLink to="/queue" class="relative flex flex-1 flex-col items-center gap-1 py-2.5 text-xs transition" :class="route.path === '/queue' ? 'text-ac1' : 'text-hint hover:text-sub'">
-                    <font-awesome-icon :icon="['fas', 'list-ol']" class="text-lg leading-none" />
-                    <span>Queue</span>
-                    <span v-if="pendingCount > 0" class="absolute top-1.5 right-[calc(50%-14px)] flex h-4 w-4 items-center justify-center rounded-full bg-ac1 text-[10px] leading-none font-bold text-white">
+            <div class="mx-auto flex max-w-2xl">
+                <RouterLink v-for="tab in tabs" :key="tab.to" :to="tab.to" class="relative flex flex-1 flex-col items-center gap-1 py-2.5 text-xs font-medium transition" :class="route.path === tab.to ? 'text-main' : 'text-hint hover:text-sub'">
+                    <font-awesome-icon :icon="['fas', tab.icon]" class="text-base leading-none" :class="route.path === tab.to ? 'text-ac1' : ''" />
+                    <span>{{ tab.label }}</span>
+                    <span v-if="tab.to === '/queue' && pendingCount > 0" class="bg-ac1 absolute top-1.5 right-[calc(50%-18px)] flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] leading-none font-bold text-black tabular">
                         {{ pendingCount > 9 ? '9+' : pendingCount }}
                     </span>
-                </RouterLink>
-                <RouterLink to="/playlists" class="flex flex-1 flex-col items-center gap-1 py-2.5 text-xs transition" :class="route.path === '/playlists' ? 'text-ac1' : 'text-hint hover:text-sub'">
-                    <font-awesome-icon :icon="['fas', 'music']" class="text-lg leading-none" />
-                    <span>Songs</span>
-                </RouterLink>
-                <RouterLink to="/info" class="flex flex-1 flex-col items-center gap-1 py-2.5 text-xs transition" :class="route.path === '/info' ? 'text-ac1' : 'text-hint hover:text-sub'">
-                    <font-awesome-icon :icon="['fas', 'circle-info']" class="text-lg leading-none" />
-                    <span>Info</span>
                 </RouterLink>
             </div>
         </nav>

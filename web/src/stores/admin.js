@@ -38,6 +38,29 @@ export const useAdminStore = defineStore('admin', () => {
         config.value = data;
     }
 
+    /** Manual override: 'auto' | 'on' | 'off'. Applies immediately (no Save needed). */
+    async function setShowMode(mode) {
+        const { data } = await axios.put('/api/admin/show-mode', { mode }, { headers: authHeaders() });
+        if (config.value) config.value.showMode = data.mode;
+        return data.mode;
+    }
+
+    const supporters = ref([]);
+    async function fetchSupporters() {
+        const { data } = await axios.get('/api/admin/supporters', { headers: authHeaders() });
+        supporters.value = data;
+    }
+    async function hideSupporterName(id) {
+        await axios.put(`/api/admin/supporters/${id}/hide-name`, {}, { headers: authHeaders() });
+        const row = supporters.value.find(s => s.id === id);
+        if (row) row.name = null;
+    }
+
+    async function fetchListenStatus() {
+        const { data } = await axios.get('/api/admin/listen/status', { headers: authHeaders() });
+        return data;
+    }
+
     async function fetchReports() {
         const { data } = await axios.get('/api/admin/reports', { headers: authHeaders() });
         reports.value = data;
@@ -111,6 +134,11 @@ export const useAdminStore = defineStore('admin', () => {
         logout,
         fetchConfig,
         saveConfig,
+        setShowMode,
+        fetchListenStatus,
+        supporters,
+        fetchSupporters,
+        hideSupporterName,
         fetchReports,
         fetchDiagnostics,
         testMqtt,

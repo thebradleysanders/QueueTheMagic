@@ -69,11 +69,11 @@ public class FppService(IDbContextFactory<AppDbContext> dbFactory, ILogger<FppSe
             statusCode = (int)response.StatusCode;
             if (!response.IsSuccessStatusCode) {
                 var body = await response.Content.ReadAsStringAsync();
-                logger.LogWarning("FPP non-2xx: {StatusCode} {Url} — {Body}", statusCode, url, body);
+                logger.LogWarning("FPP non-2xx: {StatusCode} {Url}: {Body}", statusCode, url, body);
             }
             return response;
         } catch (Exception ex) {
-            logger.LogWarning("FPP call failed: {Url} — {Message}", url, ex.Message);
+            logger.LogWarning("FPP call failed: {Url}: {Message}", url, ex.Message);
             return null;
         } finally {
             sw.Stop();
@@ -93,11 +93,11 @@ public class FppService(IDbContextFactory<AppDbContext> dbFactory, ILogger<FppSe
             statusCode = (int)response.StatusCode;
             if (!response.IsSuccessStatusCode) {
                 var body = await response.Content.ReadAsStringAsync();
-                logger.LogWarning("FPP POST non-2xx: {StatusCode} {Url} — {Body}", statusCode, url, body);
+                logger.LogWarning("FPP POST non-2xx: {StatusCode} {Url}: {Body}", statusCode, url, body);
             }
             return response;
         } catch (Exception ex) {
-            logger.LogWarning("FPP POST failed: {Url} — {Message}", url, ex.Message);
+            logger.LogWarning("FPP POST failed: {Url}: {Message}", url, ex.Message);
             return null;
         } finally {
             sw.Stop();
@@ -118,7 +118,7 @@ public class FppService(IDbContextFactory<AppDbContext> dbFactory, ILogger<FppSe
             statusCode = (int)response.StatusCode;
             return response;
         } catch (Exception ex) {
-            logger.LogWarning("FPP command failed: {Command} — {Message}", command, ex.Message);
+            logger.LogWarning("FPP command failed: {Command}: {Message}", command, ex.Message);
             return null;
         } finally {
             sw.Stop();
@@ -161,11 +161,11 @@ public class FppService(IDbContextFactory<AppDbContext> dbFactory, ILogger<FppSe
     }
 
     // Creates a temporary single-song playlist and starts it.
-    // FPP's /api/sequence/{name}/start is for overlay sequences only — main playback requires a playlist.
+    // FPP's /api/sequence/{name}/start is for overlay sequences only, main playback requires a playlist.
     public async Task<bool> StartSequenceAsync(string sequenceName, string mediaName = "") {
         const string TempPlaylist = "xlq_current";
 
-        // Ensure .fseq extension — /api/sequence list omits it but FPP playlist entries require it
+        // Ensure .fseq extension, /api/sequence list omits it but FPP playlist entries require it
         if (!sequenceName.EndsWith(".fseq", StringComparison.OrdinalIgnoreCase))
             sequenceName += ".fseq";
         var entryType = string.IsNullOrEmpty(mediaName) ? "sequence" : "both";

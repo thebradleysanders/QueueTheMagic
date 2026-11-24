@@ -96,7 +96,7 @@ public class QueueManagerService(
             ? (DateTime.UtcNow - playingItem.StartedAt!.Value).TotalSeconds
             : double.MaxValue;
         if (playingItem != null && fppStatus.IsIdle && playingSecondsElapsed < MinPlayedSeconds)
-            logger.LogDebug("FPP idle but '{Title}' only started {Seconds:F0}s ago — likely still loading, skipping played check", playingItem.Song.Title, playingSecondsElapsed);
+            logger.LogDebug("FPP idle but '{Title}' only started {Seconds:F0}s ago: likely still loading, skipping played check", playingItem.Song.Title, playingSecondsElapsed);
         if (playingItem != null && fppStatus.IsIdle && playingSecondsElapsed >= MinPlayedSeconds) {
             logger.LogInformation("Queue song '{Title}' finished (played {Seconds:F0}s)", playingItem.Song.Title, playingSecondsElapsed);
             await queueService.MarkPlayedAsync(playingItem.Id);
@@ -108,10 +108,10 @@ public class QueueManagerService(
 
         var config = await GetConfigAsync();
 
-        if (!config.IsSeasonActive) {
-            // Season is off — stop anything playing and go idle
+        if (!ScheduleHelper.IsSeasonActive(config)) {
+            // Season is off, stop anything playing and go idle
             if (fppStatus.IsPlayingPlaylist && playingItem == null) {
-                logger.LogInformation("Season inactive — stopping default playlist");
+                logger.LogInformation("Season inactive: stopping default playlist");
                 await fppService.StopPlaylistAsync();
                 RecordCommand();
             }
@@ -119,12 +119,12 @@ public class QueueManagerService(
             return;
         }
 
-        var isOpen = ScheduleHelper.IsOpen(config.ShowScheduleJson);
+        var isOpen = ScheduleHelper.IsOpen(config);
 
         if (!isOpen) {
-            // Outside show hours — stop the default playlist if it's looping, do nothing else.
+            // Outside show hours, stop the default playlist if it's looping, do nothing else.
             if (fppStatus.IsPlayingPlaylist && playingItem == null) {
-                logger.LogInformation("Outside show hours — stopping default playlist");
+                logger.LogInformation("Outside show hours: stopping default playlist");
                 await fppService.StopPlaylistAsync();
                 RecordCommand();
             }
@@ -134,7 +134,7 @@ public class QueueManagerService(
 
         if (nextPending != null) {
             // FPP is playing something we didn't queue (default playlist or standalone sequence) → stop it.
-            // Never stop xlq_current — that's our own temp playlist started by this service.
+            // Never stop xlq_current, that's our own temp playlist started by this service.
             var fppPlayingOurPlaylist = fppStatus.current_playlist?.playlist == "xlq_current";
             var fppPlayingUnqueued = (fppStatus.IsPlayingPlaylist || fppStatus.IsPlayingSequence)
                 && playingItem == null && !fppPlayingOurPlaylist;

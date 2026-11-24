@@ -18,10 +18,10 @@
 
         <div class="mb-4 flex items-center justify-between">
             <div>
-                <h2 class="text-main text-lg leading-tight font-bold">The Queue</h2>
+                <h2 class="text-main text-xl font-semibold tracking-tight">Queue</h2>
                 <p v-if="queueDepth > 0" class="text-hint text-xs">{{ queueDepth }} song{{ queueDepth !== 1 ? 's' : '' }} waiting</p>
             </div>
-            <button v-if="showStore.config.isOpen" @click="showModal = true" class="btn-ac rounded-xl px-4 py-2 text-sm font-semibold transition active:scale-95">+ Request</button>
+            <button v-if="showStore.config.isOpen" @click="showModal = true" class="btn-ac rounded-lg px-4 py-2 text-sm transition active:scale-95">Request a song</button>
         </div>
 
         <QueueList />

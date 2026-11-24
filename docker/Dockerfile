@@ -54,5 +54,7 @@ ENV APP_PORT=80
 ENV API_PORT=5288
 
 EXPOSE ${APP_PORT}
+# Listen live: Opus RTP audio in from FPP (LAN only, never forward this port)
+EXPOSE 5004/udp
 
 CMD ["/start.sh"]

@@ -4,163 +4,192 @@
   box-sizing: border-box;
 }
 
-/* ── Theme tokens ────────────────────────────────── */
+/* ── Surface tokens (dark only) ──────────────────── */
 :root {
-  --bg-base:    #f8fafc;
-  --bg-card:    #ffffff;
-  --bg-lift:    #f1f5f9;
-  --bg-inset:   #e2e8f0;
-  --bd-base:    #e2e8f0;
-  --bd-strong:  #cbd5e1;
-  --tx-main:    #0f172a;
-  --tx-sub:     #64748b;
-  --tx-hint:    #94a3b8;
-  --tx-ghost:   #cbd5e1;
-  --nav-bg:     rgba(255,255,255,0.96);
-  --nav-border: #e2e8f0;
+  --bg-base:    #09090b;
+  --bg-card:    #111114;
+  --bg-lift:    #1a1a1f;
+  --bg-inset:   #0c0c0f;
+  --bd-base:    #26262c;
+  --bd-strong:  #3a3a42;
+  --tx-main:    #fafafa;
+  --tx-sub:     #a1a1aa;
+  --tx-hint:    #8d8d97;
+  --tx-ghost:   #3a3a42;
+  --nav-bg:     rgba(9,9,11,0.92);
+  --nav-border: #26262c;
+  color-scheme: dark;
 }
 
-html.dark {
-  --bg-base:    #0a0a0f;
-  --bg-card:    #111827;
-  --bg-lift:    #1f2937;
-  --bg-inset:   #030712;
-  --bd-base:    #1f2937;
-  --bd-strong:  #374151;
-  --tx-main:    #f9fafb;
-  --tx-sub:     #9ca3af;
-  --tx-hint:    #9297a1;
-  --tx-ghost:   #374151;
-  --nav-bg:     rgba(17,24,39,0.96);
-  --nav-border: #1f2937;
-}
-
-/* ── Seasonal palettes ───────────────────────────────
-   --ac1  primary action (Request a Song, progress, "live")
-   --ac2  secondary action (Donate)
-   --ac3  highlight (stars, boosts, light bulbs)
-   Values are space-separated RGB so we can write rgb(var(--ac1) / .2).
-   --tint tints the page/card backgrounds a touch toward the season.       */
+/* ── Seasonal accent ─────────────────────────────────
+   One quiet accent colour per season, used for the primary button, the
+   "live" indicator and the progress bar. Nothing else is tinted.
+   --ac1 primary   --ac2 secondary   --ac3 highlight (stars)
+   Space-separated RGB so we can write rgb(var(--ac1) / .2).               */
 :root {
   --ac1: 34 197 94;
   --ac2: 236 72 153;
   --ac3: 234 179 8;
-  --tint: 34 197 94;
 }
-html[data-season="christmas"]  { --ac1: 34 197 94;   --ac2: 239 68 68;   --ac3: 250 204 21; --tint: 239 68 68; }
-html[data-season="winter"]     { --ac1: 56 189 248;  --ac2: 129 140 248; --ac3: 186 230 253; --tint: 56 189 248; }
-html[data-season="valentines"] { --ac1: 244 63 94;   --ac2: 217 70 239;  --ac3: 251 191 36; --tint: 244 63 94; }
-html[data-season="stpatricks"] { --ac1: 22 163 74;   --ac2: 234 179 8;   --ac3: 74 222 128; --tint: 22 163 74; }
-html[data-season="spring"]     { --ac1: 52 211 153;  --ac2: 244 114 182; --ac3: 250 204 21; --tint: 244 114 182; }
-html[data-season="patriotic"]  { --ac1: 59 130 246;  --ac2: 239 68 68;   --ac3: 226 232 240; --tint: 59 130 246; }
-html[data-season="halloween"]  { --ac1: 249 115 22;  --ac2: 168 85 247;  --ac3: 163 230 53; --tint: 168 85 247; }
-html[data-season="autumn"]     { --ac1: 217 119 6;   --ac2: 194 65 12;   --ac3: 250 204 21; --tint: 217 119 6; }
+html[data-season="christmas"]  { --ac1: 52 211 153;  --ac2: 248 113 113; --ac3: 250 204 21; }
+html[data-season="winter"]     { --ac1: 56 189 248;  --ac2: 129 140 248; --ac3: 186 230 253; }
+html[data-season="valentines"] { --ac1: 251 113 133; --ac2: 217 70 239;  --ac3: 251 191 36; }
+html[data-season="stpatricks"] { --ac1: 74 222 128;  --ac2: 234 179 8;   --ac3: 250 204 21; }
+html[data-season="spring"]     { --ac1: 52 211 153;  --ac2: 244 114 182; --ac3: 250 204 21; }
+html[data-season="patriotic"]  { --ac1: 96 165 250;  --ac2: 248 113 113; --ac3: 226 232 240; }
+html[data-season="halloween"]  { --ac1: 251 146 60;  --ac2: 192 132 252; --ac3: 163 230 53; }
+html[data-season="autumn"]     { --ac1: 245 158 11;  --ac2: 234 88 12;   --ac3: 250 204 21; }
 
-/* Background tint: very subtle, mixed into the neutral base so contrast is unchanged. */
-html[data-season] body {
-  background-image:
-    radial-gradient(1200px 500px at 50% -8%, rgb(var(--tint) / 0.10), transparent 70%),
-    radial-gradient(800px 400px at 100% 100%, rgb(var(--ac1) / 0.05), transparent 70%);
-  background-attachment: fixed;
-}
-html.dark[data-season] body {
-  background-image:
-    radial-gradient(1200px 500px at 50% -8%, rgb(var(--tint) / 0.16), transparent 70%),
-    radial-gradient(800px 400px at 100% 100%, rgb(var(--ac1) / 0.08), transparent 70%);
-}
-
-/* ── Accent utilities (replace hard-coded green/pink) ─────────────── */
+/* ── Accent utilities ────────────────────────────── */
 @layer utilities {
   .text-ac1 { color: rgb(var(--ac1)); }
   .text-ac2 { color: rgb(var(--ac2)); }
   .text-ac3 { color: rgb(var(--ac3)); }
+  .text-ac1-strong { color: rgb(var(--ac1)); }
+  .text-ac2-strong { color: rgb(var(--ac2)); }
   .bg-ac1   { background-color: rgb(var(--ac1)); }
-  .bg-ac1-soft { background-color: rgb(var(--ac1) / 0.15); }
-  .bg-ac3-soft { background-color: rgb(var(--ac3) / 0.12); }
-  .border-ac1-soft { border-color: rgb(var(--ac1) / 0.4); }
-  .border-ac3-soft { border-color: rgb(var(--ac3) / 0.3); }
-  .shadow-ac1 { box-shadow: 0 4px 24px rgb(var(--ac1) / 0.22); }
+  .bg-ac1-soft { background-color: rgb(var(--ac1) / 0.12); }
+  .bg-ac3-soft { background-color: rgb(var(--ac3) / 0.10); }
+  .border-ac1-soft { border-color: rgb(var(--ac1) / 0.45); }
+  .border-ac3-soft { border-color: rgb(var(--ac3) / 0.35); }
   .focus-ac1:focus { border-color: rgb(var(--ac1)); outline: none; }
 }
-/* Light mode needs darker accent text to stay readable on white */
-html:not(.dark) .text-ac1-strong { color: color-mix(in srgb, rgb(var(--ac1)) 62%, black); }
-html:not(.dark) .text-ac2-strong { color: color-mix(in srgb, rgb(var(--ac2)) 62%, black); }
-html.dark .text-ac1-strong { color: color-mix(in srgb, rgb(var(--ac1)) 55%, white); }
-html.dark .text-ac2-strong { color: color-mix(in srgb, rgb(var(--ac2)) 55%, white); }
 
-/* Big call-to-action tiles on Home */
-.cta { position: relative; overflow: hidden; border-radius: 1rem; border: 1px solid; transition: transform .15s; }
-.cta:active { transform: scale(.95); }
-.cta-1, .cta-2 { --a: var(--ac1); }
-.cta-2 { --a: var(--ac2); }
-html:not(.dark) .cta-1, html:not(.dark) .cta-2 {
-  border-color: rgb(var(--a) / .4);
-  background: linear-gradient(135deg, rgb(var(--a) / .14), rgb(var(--a) / .05) 60%, rgb(var(--a) / .12));
-  box-shadow: 0 2px 12px rgb(var(--a) / .15);
-}
-html.dark .cta-1, html.dark .cta-2 {
-  border-color: rgb(var(--a) / .38);
-  background: linear-gradient(135deg, color-mix(in srgb, rgb(var(--a)) 24%, #05070a), color-mix(in srgb, rgb(var(--a)) 12%, #05070a) 60%, color-mix(in srgb, rgb(var(--a)) 30%, #05070a));
-  box-shadow: 0 4px 24px rgb(var(--a) / .22);
-}
-.cta .cta-glow { position: absolute; top: -1rem; right: -1rem; width: 5rem; height: 5rem; border-radius: 9999px; pointer-events: none; background: radial-gradient(circle, rgb(var(--a) / .28) 0%, transparent 70%); }
-.cta .cta-icon { color: rgb(var(--a)); }
-.cta .cta-title { color: #fff; }
-html:not(.dark) .cta .cta-title { color: color-mix(in srgb, rgb(var(--a)) 35%, black); }
-.cta .cta-chip { border: 1px solid rgb(var(--a) / .35); background: rgb(var(--a) / .16); color: color-mix(in srgb, rgb(var(--a)) 50%, white); }
-html:not(.dark) .cta .cta-chip { color: color-mix(in srgb, rgb(var(--a)) 60%, black); }
-
-/* Solid action button (pay / confirm) */
+/* ── Buttons ─────────────────────────────────────── */
+/* Primary: solid accent, dark text (reads well on every seasonal colour). */
 .btn-ac {
-  color: #fff;
-  background: linear-gradient(135deg, color-mix(in srgb, rgb(var(--ac1)) 88%, black), color-mix(in srgb, rgb(var(--ac1)) 62%, black));
-  box-shadow: 0 4px 16px rgb(var(--ac1) / .3);
+  color: #0a0a0a;
+  font-weight: 600;
+  background: rgb(var(--ac1));
+  transition: filter .15s, transform .15s;
 }
-.btn-ac:hover:not(:disabled) { filter: brightness(1.1); }
+.btn-ac:hover:not(:disabled) { filter: brightness(1.08); }
+.btn-ac:disabled { opacity: .4; cursor: not-allowed; }
+
+/* Secondary: quiet outline. */
+.btn-quiet {
+  color: var(--tx-main);
+  font-weight: 600;
+  background: var(--bg-lift);
+  border: 1px solid var(--bd-strong);
+  transition: background .15s, transform .15s;
+}
+.btn-quiet:hover { background: #22222a; }
+
+/* Small outlined pill (boost) */
+.chip-boost {
+  color: var(--tx-main);
+  background: transparent;
+  border: 1px solid var(--bd-strong);
+}
+.chip-boost:hover { border-color: rgb(var(--ac1) / .6); color: rgb(var(--ac1)); }
+
+/* Currently-playing marker: a thin accent edge, nothing glowing. */
+.card-live { border-color: rgb(var(--ac1) / .5); }
+.row-live { background: rgb(var(--ac1) / .08); }
+.row-next { background: transparent; }
+
+/* Donate / goal: the warm secondary colour */
 .btn-ac-2 {
-  color: #fff;
-  background: linear-gradient(135deg, color-mix(in srgb, rgb(var(--ac2)) 88%, black), color-mix(in srgb, rgb(var(--ac2)) 62%, black));
-  box-shadow: 0 4px 16px rgb(var(--ac2) / .3);
+  color: #0a0a0a;
+  font-weight: 600;
+  background: rgb(var(--ac2));
+  transition: filter .15s, transform .15s;
 }
+.btn-ac-2:hover:not(:disabled) { filter: brightness(1.08); }
 
-/* Boost chip (gold) */
-.chip-boost { background: linear-gradient(135deg, rgb(var(--ac3) / .22), rgb(var(--ac3) / .1)); border: 1px solid rgb(var(--ac3) / .4); color: color-mix(in srgb, rgb(var(--ac3)) 70%, black); }
-html.dark .chip-boost { color: rgb(var(--ac3)); }
+/* ── Festive pieces (it's a light show, so let it glow a little) ───────── */
 
-/* Card that's currently playing */
-.card-live { border-color: rgb(var(--ac1) / .4); }
-html:not(.dark) .card-live-bg { background: linear-gradient(135deg, rgb(var(--ac1) / .16) 0%, #fff 60%); }
-html.dark .card-live-bg { background: linear-gradient(135deg, color-mix(in srgb, rgb(var(--ac1)) 20%, #05070a) 0%, var(--bg-card) 60%); }
-.row-live { background: rgb(var(--ac1) / .12); }
-.row-next { background: rgb(var(--ac3) / .1); }
-
-/* ── Header light string ────────────────────────────── */
-.light-string { position: relative; height: 22px; overflow: hidden; pointer-events: none; }
-.light-string::before { /* the wire */
-  content: ""; position: absolute; left: -2%; right: -2%; top: -9px; height: 18px;
-  border-bottom: 2px solid var(--bd-strong); border-radius: 0 0 50% 50% / 0 0 100% 100%;
+/* Header light string. Bulbs twinkle gently; a cheer flashes them all, activity runs a chase. */
+.light-string { position: relative; height: 20px; overflow: hidden; pointer-events: none; }
+.light-string::before {
+  content: ""; position: absolute; left: -2%; right: -2%; top: -10px; height: 18px;
+  border-bottom: 1.5px solid #2c2c33; border-radius: 0 0 50% 50% / 0 0 100% 100%;
 }
 .light-string .bulb {
-  position: absolute; top: 3px; width: 8px; height: 12px; border-radius: 50% 50% 55% 55%;
-  background: var(--c); box-shadow: 0 0 8px 2px var(--c);
-  animation: twinkle 2.4s ease-in-out infinite;
+  position: absolute; top: 2px; width: 7px; height: 10px; margin-left: -3.5px;
+  border-radius: 50% 50% 55% 55%;
+  background: var(--c);
+  box-shadow: 0 0 6px 1px var(--c);
+  opacity: .85;
+  animation: twinkle 3s ease-in-out infinite;
+  animation-delay: var(--d);
 }
-.light-string .bulb::before { content: ""; position: absolute; top: -3px; left: 2px; width: 4px; height: 4px; background: var(--bd-strong); border-radius: 1px; }
-@keyframes twinkle { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+@keyframes twinkle { 0%, 100% { opacity: .9; } 50% { opacity: .35; } }
+.light-string.flash .bulb { animation: bulb-flash .5s ease-out 3; }
+@keyframes bulb-flash { 0% { opacity: 1; box-shadow: 0 0 14px 4px var(--c); } 100% { opacity: .5; } }
+.light-string.chase .bulb { animation: bulb-chase 1.4s ease-in-out 1; animation-delay: calc(var(--i) * 35ms); }
+@keyframes bulb-chase { 0%, 100% { opacity: .4; } 30% { opacity: 1; box-shadow: 0 0 14px 4px var(--c); } }
 
-/* ── Floating season particles ──────────────────────── */
-.season-particle {
-  position: fixed; top: -2rem; z-index: 20; pointer-events: none; user-select: none;
-  opacity: .7; animation: season-fall linear infinite; will-change: transform;
+.star-glow { filter: drop-shadow(0 0 6px rgb(var(--ac3) / .6)); }
+
+/* Burst of lights from a button */
+.burst-dot {
+  position: fixed; z-index: 60; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 9999px;
+  background: var(--c); box-shadow: 0 0 10px 2px var(--c); pointer-events: none;
+  animation: burst .75s cubic-bezier(.2,.7,.3,1) forwards;
 }
-@keyframes season-fall {
-  0%   { transform: translate3d(0, -2rem, 0) rotate(0deg); }
-  100% { transform: translate3d(var(--drift, 30px), 105vh, 0) rotate(360deg); }
+@keyframes burst {
+  0%   { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(.3); opacity: 0; }
 }
-@media (prefers-reduced-motion: reduce) {
-  .season-particle { display: none; }
-  .light-string .bulb { animation: none; }
+
+/* Cheer button */
+.cheer-btn {
+  color: #0a0a0a;
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, rgb(var(--ac3)) 70%, white), rgb(var(--ac3)) 70%);
+  box-shadow: 0 0 0 4px rgb(var(--ac3) / .15), 0 0 24px rgb(var(--ac3) / .35);
+  transition: transform .15s, box-shadow .2s, opacity .2s;
 }
+.cheer-btn:hover { box-shadow: 0 0 0 6px rgb(var(--ac3) / .2), 0 0 32px rgb(var(--ac3) / .5); }
+.cheer-btn.pressed { transform: scale(.88); }
+.cheer-btn.cooling { opacity: .65; }
+
+/* Donation goal */
+.goal-card {
+  border-color: rgb(var(--ac2) / .35);
+  background: linear-gradient(160deg, rgb(var(--ac2) / .10), var(--bg-card) 55%);
+}
+.goal-bulbs { display: flex; justify-content: space-between; gap: 2px; }
+.goal-bulb {
+  width: 10px; height: 14px; border-radius: 50% 50% 55% 55%;
+  background: #26262c; transition: background .4s, box-shadow .4s;
+}
+.goal-bulb.on {
+  background: var(--c); box-shadow: 0 0 8px 1px var(--c);
+  animation: twinkle 3s ease-in-out infinite; animation-delay: var(--d);
+}
+
+/* Now playing hero */
+.np-live {
+  border-color: rgb(var(--ac1) / .45);
+  background:
+    radial-gradient(120% 90% at 100% 0%, rgb(var(--ac1) / .16), transparent 60%),
+    radial-gradient(90% 80% at 0% 100%, rgb(var(--ac2) / .10), transparent 60%),
+    var(--bg-card);
+}
+.eq { display: flex; align-items: flex-end; gap: 3px; height: 18px; }
+.eq span { width: 4px; border-radius: 2px; background: var(--c); box-shadow: 0 0 6px var(--c); animation: eq .9s ease-in-out infinite alternate; }
+@keyframes eq { from { height: 4px; } to { height: 18px; } }
+
+/* Big request button */
+.cta-request {
+  color: #0a0a0a;
+  background: linear-gradient(135deg, rgb(var(--ac1)), color-mix(in srgb, rgb(var(--ac1)) 70%, rgb(var(--ac3))));
+  box-shadow: 0 6px 24px rgb(var(--ac1) / .3);
+  transition: transform .15s, filter .15s;
+}
+.cta-request:hover { filter: brightness(1.06); }
+.cta-request:active { transform: scale(.98); }
+
+/* Activity toasts */
+.toast { background: rgba(17,17,20,.95); border-color: var(--bd-strong); backdrop-filter: blur(8px); }
+.toast-enter-active, .toast-leave-active { transition: all .35s ease; }
+.toast-enter-from { opacity: 0; transform: translateY(-10px) scale(.96); }
+.toast-leave-to { opacity: 0; transform: translateY(-6px); }
+
+button, a, input { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 2px solid rgb(var(--ac1)); outline-offset: 2px; }
 
 /* ── Semantic utilities ──────────────────────────── */
 @layer utilities {
@@ -178,6 +207,16 @@ html.dark .card-live-bg { background: linear-gradient(135deg, color-mix(in srgb,
   .nav-border { border-color: var(--nav-border); }
   .hover\:bg-lift:hover  { background-color: var(--bg-lift); }
   .hover\:bg-inset:hover { background-color: var(--bg-inset); }
+  .tabular { font-variant-numeric: tabular-nums; }
+}
+
+/* Small uppercase section label */
+.label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tx-hint);
 }
 
 body {
@@ -185,7 +224,8 @@ body {
   min-height: 100vh;
   background-color: var(--bg-base);
   color: var(--tx-main);
-  font-family: Inter, system-ui, sans-serif;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 #app {
@@ -195,6 +235,10 @@ body {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
 }
 
 /* Scale up base font size on desktop so all rem-based sizes feel comfortable */

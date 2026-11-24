@@ -29,6 +29,9 @@ namespace XlightsQueue.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("DisplayName")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("SessionToken")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -131,6 +134,13 @@ namespace XlightsQueue.Migrations
                     b.Property<decimal>("DonateCost")
                         .HasColumnType("TEXT");
 
+                    b.Property<decimal>("DonationGoal")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DonationGoalLabel")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("DefaultPlaylistName")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -181,6 +191,25 @@ namespace XlightsQueue.Migrations
                     b.Property<int>("RateLimitWindowMinutes")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("ListenEnabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ListenMaxListeners")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("ShowSupporters")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("SeasonEnd")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SeasonStart")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ShowMode")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("ShowScheduleJson")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -221,6 +250,7 @@ namespace XlightsQueue.Migrations
                             MqttTopicPrefix = "xlights",
                             MqttUsername = "",
                             RateLimitWindowMinutes = 60,
+                            ShowMode = "auto",
                             ShowScheduleJson = "[]",
                             SiteName = "Queue The Magic",
                             SocialMediaJson = "[]",

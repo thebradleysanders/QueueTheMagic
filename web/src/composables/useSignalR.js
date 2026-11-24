@@ -2,12 +2,14 @@ import * as signalR from '@microsoft/signalr';
 
 import { onMounted, onUnmounted } from 'vue';
 
+import { useCommunityStore } from '@/stores/community';
 import { useShowStore } from '@/stores/show';
 
 let connection = null;
 
 export function useSignalR() {
     const showStore = useShowStore();
+    const community = useCommunityStore();
 
     function connect() {
         if (connection) return;
@@ -26,9 +28,10 @@ export function useSignalR() {
             showStore.config = { ...config, theme: 'dark' };
         });
 
-        connection.on('QueueItemAdded', item => {
-            // QueueUpdated broadcast handles this; here as fallback
-        });
+        connection.on('Activity', a => community.onActivity(a));
+        connection.on('Cheer', c => community.onCheer(c));
+        connection.on('CommunityUpdated', c => community.apply(c));
+        connection.on('SupportersChanged', () => community.supportersVersion++);
 
         connection.start().catch(err => console.error('SignalR error:', err));
     }

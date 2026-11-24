@@ -3,19 +3,15 @@
 
     import { computed, ref, watch } from 'vue';
 
-    import { useSeason } from '@/composables/useSeason';
-
     import { useSessionStore } from '@/stores/session';
     import { useShowStore } from '@/stores/show';
 
     import MarqueeText from '@/components/MarqueeText.vue';
 
     const showStore = useShowStore();
-    const { season } = useSeason();
     const sessionStore = useSessionStore();
     const np = computed(() => showStore.nowPlaying);
     const isPlaying = computed(() => np.value?.isPlaying);
-    const isDark = computed(() => showStore.config.theme !== 'light');
 
     const total = computed(() => (np.value?.secondsPlayed ?? 0) + (np.value?.secondsRemaining ?? 0));
     const progress = computed(() => (total.value > 0 ? (np.value.secondsPlayed / total.value) * 100 : 0));
@@ -84,53 +80,33 @@
 </script>
 
 <template>
-    <div class="relative overflow-hidden rounded-2xl border p-4 md:p-6" :class="isPlaying ? 'card-live card-live-bg shadow-ac1' : 'border-base bg-card shadow-[0_4px_24px_rgba(104,107,112,0.2)]'">
-        <!-- Glow blob when playing -->
-        <div v-if="isPlaying" class="bg-ac1 pointer-events-none absolute -top-8 -right-8 h-32 w-32 rounded-full opacity-20 blur-2xl" />
-        <div v-else class="pointer-events-none absolute -bottom-8 -left-8 h-32 w-32 rounded-full bg-white/40 opacity-20 blur-2xl" />
-
-        <!-- Header row -->
-        <div class="relative mb-3 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <span class="text-xs tracking-widest uppercase font-bold" :class="isPlaying ? 'text-ac1' : 'text-hint'">
-                    <template v-if="isPlaying">
-                        <font-awesome-icon :icon="['fas', 'music']" />
-                        Now Playing
-                    </template>
-                    <template v-else>
-                        <font-awesome-icon :icon="['fas', season.icon]" />
-                        Standby Mode
-                    </template>
-                </span>
-            </div>
-            <div v-if="isPlaying" class="flex h-5 items-end gap-0.5">
-                <span v-for="i in 5" :key="i" class="bg-ac1 w-1 rounded-full" :style="`height:${6 + i * 3}px; animation: bounce${i} 0.8s ease-in-out infinite alternate; animation-delay:${i * 0.12}s`" />
+    <div class="relative overflow-hidden rounded-2xl border p-4 md:p-5" :class="isPlaying ? 'np-live' : 'bg-card border-base'">
+        <div class="mb-3 flex items-center justify-between">
+            <span class="label flex items-center gap-2" :class="isPlaying ? '!text-[rgb(var(--ac1))]' : ''">
+                <span class="h-1.5 w-1.5 rounded-full" :class="isPlaying ? 'bg-ac1 live-dot' : 'bg-[var(--bd-strong)]'" />
+                {{ isPlaying ? (np.songId ? 'Now playing · requested' : 'Now playing') : 'Standby' }}
+            </span>
+            <div v-if="isPlaying" class="eq" aria-hidden="true">
+                <span v-for="i in 5" :key="i" :style="`--c: rgb(var(--ac${(i % 3) + 1})); animation-delay: ${i * 0.13}s; animation-duration: ${0.6 + (i % 3) * 0.2}s`" />
             </div>
         </div>
 
-        <!-- Track info -->
-        <div v-if="isPlaying" class="relative">
-            <MarqueeText :text="np.title" class="text-main text-xl leading-tight font-bold md:text-3xl" />
-            <MarqueeText v-if="np.artist" :text="np.artist" class="text-sub mt-0.5 text-sm md:text-base" />
+        <div v-if="isPlaying">
+            <MarqueeText :text="np.title" class="text-main text-xl leading-tight font-semibold tracking-tight md:text-2xl" />
+            <MarqueeText v-if="np.artist" :text="np.artist" class="text-sub mt-0.5 text-sm" />
 
-            <!-- Progress -->
-            <div v-if="total > 0" class="mt-3">
-                <div class="bg-lift h-1.5 overflow-hidden rounded-full">
-                    <div class="h-full rounded-full transition-all duration-1000" :style="`width:${progress}%; background: linear-gradient(90deg, rgb(var(--ac1)), rgb(var(--ac3)))`" />
+            <div v-if="total > 0" class="mt-4">
+                <div class="bg-lift h-1 overflow-hidden rounded-full">
+                    <div class="bg-ac1 h-full rounded-full transition-all duration-1000" :style="`width:${progress}%`" />
                 </div>
-                <div class="text-hint mt-1.5 flex justify-between text-xs">
+                <div class="text-hint tabular mt-1.5 flex justify-between text-xs">
                     <span>{{ fmt(np.secondsPlayed) }}</span>
-                    <span>{{ fmt(np.secondsRemaining) }} left</span>
+                    <span>-{{ fmt(np.secondsRemaining) }}</span>
                 </div>
             </div>
 
-            <!-- Star rating -->
-            <div v-if="np.songId" class="border-base mt-3 border-t pt-3">
-                <div class="flex items-center justify-between">
-                    <span class="text-hint text-xs">{{ rated ? 'Your rating' : 'Rate this song' }}</span>
-                    <span v-if="totalRatings > 0" class="text-hint text-xs">★ {{ avgRating }} avg · {{ totalRatings }} {{ totalRatings === 1 ? 'vote' : 'votes' }}</span>
-                </div>
-                <div class="mt-2 flex gap-0.5" @mouseleave="hovered = 0">
+            <div v-if="np.songId" class="border-base mt-4 flex items-center justify-between border-t pt-3" @mouseleave="hovered = 0">
+                <div class="flex items-center">
                     <button
                         v-for="star in 5"
                         :key="star"
@@ -138,68 +114,31 @@
                         @click="submitRating(star)"
                         :disabled="submitting"
                         :aria-label="`Rate ${star} star${star > 1 ? 's' : ''}`"
-                        class="flex-1 touch-manipulation py-2 text-center text-4xl leading-none transition-transform active:scale-90 disabled:opacity-50"
-                        :class="star <= displayStars ? 'text-ac3 opacity-100' : 'opacity-20'"
-                        style="min-width: 44px"
-                    >
-                        {{ star <= displayStars ? '★' : '☆' }}
-                    </button>
+                        class="touch-manipulation px-0.5 py-1 text-2xl leading-none transition-transform active:scale-90 disabled:opacity-50"
+                        :class="star <= displayStars ? 'text-ac3' : 'text-[var(--bd-strong)]'"
+                    >&#9733;</button>
                 </div>
+                <span class="text-hint tabular text-xs">
+                    <template v-if="rated">Thanks for rating</template>
+                    <template v-else>Rate this song</template>
+                    <template v-if="totalRatings > 0"> · {{ avgRating }} avg ({{ totalRatings }})</template>
+                </span>
             </div>
         </div>
 
-        <!-- Idle state -->
-        <div v-else>
-            <p class="text-hint text-sm" v-if="np?.state === 'PlayingDefault'">
-                Default playlist running
-            </p>
-            <p v-else class="text-hint text-sm font-semibold">
-                Warming up the lights… {{ season.emoji }}
-            </p>
-        </div>
+        <p v-else class="text-sub text-sm">
+            {{ np?.state === 'PlayingDefault' ? 'The default playlist is running. Request a song to jump in.' : 'The show is warming up.' }}
+        </p>
     </div>
 </template>
 
 <style scoped>
-    @keyframes bounce1 {
-        from {
-            height: 6px;
-        }
-        to {
-            height: 18px;
-        }
+    .live-dot {
+        animation: live 1.6s ease-in-out infinite;
     }
-    @keyframes bounce2 {
-        from {
-            height: 9px;
-        }
-        to {
-            height: 14px;
-        }
-    }
-    @keyframes bounce3 {
-        from {
-            height: 12px;
-        }
-        to {
-            height: 20px;
-        }
-    }
-    @keyframes bounce4 {
-        from {
-            height: 7px;
-        }
-        to {
-            height: 16px;
-        }
-    }
-    @keyframes bounce5 {
-        from {
-            height: 10px;
-        }
-        to {
-            height: 22px;
-        }
+    @keyframes live {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.3; }
     }
     button {
         cursor: pointer;

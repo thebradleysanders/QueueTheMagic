@@ -20,9 +20,11 @@ public class AdminController(
     QueueService queueService,
     FppService fppService,
     MqttService mqttService,
+    ShowControlService showControl,
+    CommunityService community,
+    AudioRelayService relay,
     IDbContextFactory<AppDbContext> dbFactory,
-    IHubContext<ShowHub> hub,
-    IConfiguration configuration) : ControllerBase {
+    IHubContext<ShowHub> hub) : ControllerBase {
     [EnableRateLimiting("login")]
     [HttpPost("login")]
     public IActionResult Login([FromBody] AdminLoginRequest request) {
@@ -61,6 +63,13 @@ public class AdminController(
         config.SongRequestCost = updated.SongRequestCost;
         config.BumpCost = updated.BumpCost;
         config.DonateCost = updated.DonateCost;
+        if (updated.DonationGoal < 0 || updated.DonationGoal > 1_000_000)
+            return BadRequest(new { error = "Donation goal must be between $0 and $1,000,000." });
+        config.DonationGoal = updated.DonationGoal;
+        config.ShowSupporters = updated.ShowSupporters;
+        config.ListenEnabled = updated.ListenEnabled;
+        config.ListenMaxListeners = Math.Clamp(updated.ListenMaxListeners, 1, 500);
+        config.DonationGoalLabel = (updated.DonationGoalLabel ?? string.Empty).Trim() is var gl && gl.Length > 120 ? gl[..120] : gl;
         config.FppAddress = updated.FppAddress;
         config.DefaultPlaylistName = updated.DefaultPlaylistName;
         config.AutoPlayDefault = updated.AutoPlayDefault;
@@ -76,26 +85,59 @@ public class AdminController(
         config.MqttPassword = updated.MqttPassword;
         config.MqttTopicPrefix = updated.MqttTopicPrefix;
         config.ShowScheduleJson = updated.ShowScheduleJson;
-        config.IsSeasonActive = updated.IsSeasonActive;
+        var mode = ScheduleHelper.ParseMode(updated.ShowMode);
+        if (mode == null) return BadRequest(new { error = "Show mode must be auto, on or off." });
+        if (updated.SeasonStart != null && updated.SeasonEnd != null && updated.SeasonEnd < updated.SeasonStart)
+            return BadRequest(new { error = "The season end date must be on or after the start date." });
+        config.ShowMode = mode;
+        config.SeasonStart = updated.SeasonStart;
+        config.SeasonEnd = updated.SeasonEnd;
         config.OffSeasonMessage = updated.OffSeasonMessage;
 
         await db.SaveChangesAsync();
 
-        // Broadcast public config change
-        var jsonOpts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-        var socialLinks = new List<SocialLinkDto>();
-        try { socialLinks = JsonSerializer.Deserialize<List<SocialLinkDto>>(config.SocialMediaJson, jsonOpts) ?? []; } catch { }
-        var schedule = new List<ShowScheduleEntryDto>();
-        try { schedule = JsonSerializer.Deserialize<List<ShowScheduleEntryDto>>(config.ShowScheduleJson, jsonOpts) ?? []; } catch { }
-        var publicConfig = new PublicConfigDto(
-            config.SiteName, config.FmRadioStation, socialLinks, config.DefaultTheme,
-            config.SongRequestCost, config.BumpCost, config.DonateCost,
-            ScheduleHelper.IsOpen(config.ShowScheduleJson), schedule,
-            config.IsSeasonActive, config.OffSeasonMessage,
-            configuration["Stripe:PublishableKey"] ?? string.Empty);
-        await hub.Clients.All.SendAsync("ShowConfigUpdated", publicConfig);
+        await showControl.AnnounceAsync(config);
+        await community.BroadcastCommunityAsync();
 
         return Ok(config);
+    }
+
+    /// <summary>Is FPP's audio arriving, and how many people are listening?</summary>
+    [Authorize]
+    [HttpGet("listen/status")]
+    public IActionResult ListenStatus() => Ok(new { live = relay.IsLive, listeners = relay.ListenerCount, port = relay.RtpPort });
+
+    /// <summary>Every payment with its public name, for moderating the supporters list.</summary>
+    [Authorize]
+    [HttpGet("supporters")]
+    public async Task<IActionResult> GetSupporters() {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var rows = await db.Donations.OrderByDescending(d => d.CreatedAt).Take(200)
+            .Select(d => new { d.Id, d.DisplayName, d.Amount, d.Type, d.CreatedAt }).ToListAsync();
+        return Ok(rows.Select(d => new AdminSupporterDto(d.Id, d.DisplayName, d.Amount, CommunityService.KindOf(d.Type),
+            DateTime.SpecifyKind(d.CreatedAt, DateTimeKind.Utc))));
+    }
+
+    /// <summary>Hides a supporter's name (they become Anonymous). The payment itself is untouched.</summary>
+    [Authorize]
+    [HttpPut("supporters/{id}/hide-name")]
+    public async Task<IActionResult> HideSupporterName(int id) {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var d = await db.Donations.FindAsync(id);
+        if (d == null) return NotFound();
+        d.DisplayName = null;
+        await db.SaveChangesAsync();
+        await hub.Clients.All.SendAsync("SupportersChanged");
+        return Ok();
+    }
+
+    /// <summary>Quick manual override from the dashboard: auto | on | off.</summary>
+    [Authorize]
+    [HttpPut("show-mode")]
+    public async Task<IActionResult> SetShowMode([FromBody] ShowModeRequest request) {
+        var config = await showControl.SetModeAsync(request.Mode, "admin");
+        if (config == null) return BadRequest(new { error = "Show mode must be auto, on or off." });
+        return Ok(new { mode = config.ShowMode });
     }
 
     // Only http(s) links are allowed so a stored "javascript:" URL can never run in a visitor's browser.
@@ -362,7 +404,7 @@ public class AdminController(
         // Try to parse as HH:MM:SS or HH:MM
         if (TimeOnly.TryParse(fppTime, out var t))
             return t.ToString("HH:mm");
-        // Sun-relative labels — return as-is for display purposes; isOpen logic skips these
+        // Sun-relative labels, return as-is for display purposes; isOpen logic skips these
         return fppTime; // "Dusk", "SunSet", "SunRise", etc.
     }
 

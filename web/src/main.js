@@ -2,7 +2,9 @@ import { library } from '@fortawesome/fontawesome-svg-core';
 import { faGithub } from '@fortawesome/free-brands-svg-icons';
 import {
     faCalendarDays,
+    faBolt,
     faChartBar,
+    faCheck,
     faChevronLeft,
     faChevronRight,
     faCircleInfo,
@@ -10,16 +12,21 @@ import {
     faGear,
     faGhost,
     faGift,
+    faHandsClapping,
+    faHeadphones,
     faHeart,
     faHouse,
     faLeaf,
     faLightbulb,
     faListOl,
     faMusic,
+    faPlay,
+    faRadio,
     faRotate,
     faSeedling,
     faSnowflake,
     faStar,
+    faStop,
     faTriangleExclamation,
     faUserGear,
     faWandMagicSparkles,
@@ -40,8 +47,8 @@ import router from './router';
 // Register only the icons we use (the full set adds ~1.5 MB to the bundle).
 library.add(
     faGithub,
-    faCalendarDays, faChartBar, faChevronLeft, faChevronRight, faCircleInfo, faClover, faGear, faGhost, faGift,
-    faHeart, faHouse, faLeaf, faLightbulb, faListOl, faMusic, faRotate, faSeedling, faSnowflake, faStar,
+    faBolt, faCalendarDays, faChartBar, faCheck, faChevronLeft, faChevronRight, faCircleInfo, faClover, faGear, faGhost, faGift, faHandsClapping, faHeadphones,
+    faHeart, faHouse, faLeaf, faLightbulb, faListOl, faMusic, faPlay, faRadio, faRotate, faSeedling, faSnowflake, faStar, faStop,
     faTriangleExclamation, faUserGear, faWandMagicSparkles, faXmark
 );
 

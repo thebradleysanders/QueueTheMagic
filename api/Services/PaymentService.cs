@@ -88,7 +88,7 @@ public class PaymentService(ILogger<PaymentService> logger, IWebHostEnvironment 
             logger.LogWarning("Refunded {Id}: {Reason}", paymentIntentId, reason);
             return true;
         } catch (Exception ex) {
-            logger.LogError(ex, "REFUND FAILED for {Id} ({Reason}) — refund manually in Stripe", paymentIntentId, reason);
+            logger.LogError(ex, "REFUND FAILED for {Id} ({Reason}): refund manually in Stripe", paymentIntentId, reason);
             return false;
         }
     }

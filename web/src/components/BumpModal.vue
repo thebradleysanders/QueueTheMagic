@@ -1,4 +1,7 @@
 <script setup>
+    import SupporterNameField from '@/components/SupporterNameField.vue';
+    import { useSupporterName } from '@/composables/useSupporterName';
+    import Celebrate from '@/components/Celebrate.vue';
     import axios from 'axios';
 
     import { nextTick, onMounted, onUnmounted, ref } from 'vue';
@@ -13,6 +16,7 @@
 
     const showStore = useShowStore();
     const sessionStore = useSessionStore();
+    const { displayName } = useSupporterName();
     const { createIntent, mountPaymentElement, confirmPayment } = usePayment();
 
     const isDev = import.meta.env.DEV;
@@ -22,7 +26,7 @@
     const paymentElementRef = ref(null);
 
     async function redeem(paymentIntentId) {
-        await axios.put(`/api/queue/${props.item.id}/bump`, { paymentIntentId, sessionToken: sessionStore.sessionToken });
+        await axios.put(`/api/queue/${props.item.id}/bump`, { paymentIntentId, sessionToken: sessionStore.sessionToken, displayName: displayName.value });
         await showStore.fetchQueue();
         step.value = 'done';
         emit('done');
@@ -66,10 +70,10 @@
 
 <template>
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-label="Boost song" @click.self="emit('close')">
-        <div class="bg-card border-base w-full max-w-sm overflow-hidden rounded-2xl border">
+        <div class="bg-card border-base w-full max-w-sm overflow-hidden rounded-xl border">
             <div class="border-base flex items-center justify-between border-b px-5 py-4">
                 <div class="min-w-0">
-                    <h2 class="text-main text-base font-bold">🚀 Boost this song</h2>
+                    <h2 class="text-main text-base font-semibold">Boost this song</h2>
                     <p class="text-hint truncate text-xs">{{ item.title }}</p>
                 </div>
                 <button @click="emit('close')" aria-label="Close" class="text-hint hover:text-main flex h-8 w-8 items-center justify-center text-xl">
@@ -82,17 +86,18 @@
             <div v-if="step === 'payment'" class="p-5">
                 <p class="text-sub mb-3 text-sm">Move this song up one spot in the queue.</p>
                 <div v-if="errorMsg" class="mb-3 rounded-xl bg-red-500/20 p-3 text-sm text-red-500">{{ errorMsg }}</div>
+                <SupporterNameField class="mb-4" />
                 <div ref="paymentElementRef"></div>
-                <button @click="submit" :disabled="loading" class="btn-ac mt-4 w-full rounded-2xl py-4 text-base font-bold transition active:scale-95 disabled:opacity-40">
-                    {{ loading ? '⏳ Processing…' : isDev ? '⚡ Boost (dev)' : `🚀 Boost — $${showStore.config.bumpCost}` }}
+                <button @click="submit" :disabled="loading" class="btn-ac mt-4 w-full rounded-xl py-4 text-base font-semibold transition active:scale-95 disabled:opacity-40">
+                    {{ loading ? 'Processing…' : isDev ? 'Boost (dev)' : `Boost · $${showStore.config.bumpCost}` }}
                 </button>
             </div>
 
             <div v-if="step === 'done'" class="p-8 text-center">
-                <div class="mb-3 text-5xl">🚀</div>
-                <p class="text-main text-lg font-bold">Boosted!</p>
+                <Celebrate :count="22" :spread="120"><font-awesome-icon :icon="['fas', 'bolt']" class="text-ac3 mb-3 text-3xl" /></Celebrate>
+                <p class="text-main text-lg font-semibold">Boosted!</p>
                 <p class="text-hint mt-1 text-sm">Your song moved up the queue.</p>
-                <button @click="emit('close')" class="btn-ac mt-5 rounded-2xl px-8 py-3 text-sm font-semibold transition active:scale-95">Done</button>
+                <button @click="emit('close')" class="btn-ac mt-5 rounded-xl px-8 py-3 text-sm font-semibold transition active:scale-95">Done</button>
             </div>
         </div>
     </div>

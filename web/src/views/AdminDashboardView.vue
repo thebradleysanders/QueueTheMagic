@@ -3,7 +3,7 @@
     import { Bar, Line } from 'vue-chartjs';
     import { useRouter } from 'vue-router';
 
-    import { computed, onMounted, ref } from 'vue';
+    import { computed, onMounted, onUnmounted, ref } from 'vue';
 
     import { useAdminStore } from '@/stores/admin';
     import { useShowStore } from '@/stores/show';
@@ -30,7 +30,7 @@
     const songSaving = ref({}); // songId → bool
 
     onMounted(async () => {
-        await Promise.all([admin.fetchReports(), admin.fetchRatings(), admin.fetchConfig(), admin.fetchDiagnostics(), admin.fetchPlaylists()]);
+        await Promise.all([admin.fetchReports(), admin.fetchSupporters(), admin.fetchRatings(), admin.fetchConfig(), admin.fetchDiagnostics(), admin.fetchPlaylists()]);
         editConfig.value = JSON.parse(JSON.stringify(admin.config));
         diagInterval.value = setInterval(() => admin.fetchDiagnostics(), 5000);
     });
@@ -64,6 +64,49 @@
         }
     }
 
+    const modeOptions = [
+        { value: 'auto', label: 'Automatic' },
+        { value: 'on', label: 'Force on' },
+        { value: 'off', label: 'Force off' }
+    ];
+    const modeMsg = ref(null);
+    async function chooseMode(mode) {
+        try {
+            editConfig.value.showMode = await admin.setShowMode(mode);
+            modeMsg.value = 'Applied.';
+        } catch {
+            modeMsg.value = 'Could not change mode.';
+        }
+        setTimeout(() => (modeMsg.value = null), 2000);
+    }
+    const seasonLive = computed(() => {
+        const c = editConfig.value;
+        if (!c) return false;
+        if (c.showMode === 'on') return true;
+        if (c.showMode === 'off') return false;
+        const d = new Date();
+        const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        return !(c.seasonStart && today < c.seasonStart) && !(c.seasonEnd && today > c.seasonEnd);
+    });
+    const modeHelp = computed(() => {
+        const m = editConfig.value?.showMode;
+        if (m === 'on') return 'Forced on: the show runs now, ignoring the season dates and weekly hours.';
+        if (m === 'off') return 'Forced off: the show is closed regardless of dates or hours.';
+        return 'Automatic: follows the season dates and weekly hours below.';
+    });
+
+    const listenStatus = ref(null);
+    async function refreshListenStatus() {
+        try {
+            listenStatus.value = await admin.fetchListenStatus();
+        } catch {
+            listenStatus.value = null;
+        }
+    }
+    refreshListenStatus();
+    const listenTimer = setInterval(refreshListenStatus, 10000);
+    onUnmounted(() => clearInterval(listenTimer));
+
     async function goHome() {
         router.push('/');
     }
@@ -74,7 +117,7 @@
             const result = await admin.syncSongs();
             syncSongsMsg.value = `✓ ${result.synced} new songs synced (${result.total} total sequences found)`;
         } catch {
-            syncSongsMsg.value = 'Sync failed — check FPP address.';
+            syncSongsMsg.value = 'Sync failed. Check the FPP address.';
         }
         setTimeout(() => (syncSongsMsg.value = null), 5000);
     }
@@ -86,7 +129,7 @@
             await admin.fetchPlaylists();
             syncPlaylistsMsg.value = `✓ ${result.newPlaylists} new playlists, ${result.newSongs} new songs imported`;
         } catch {
-            syncPlaylistsMsg.value = 'Sync failed — check FPP address.';
+            syncPlaylistsMsg.value = 'Sync failed. Check the FPP address.';
         }
         setTimeout(() => (syncPlaylistsMsg.value = null), 5000);
     }
@@ -138,7 +181,7 @@
             await admin.testMqtt();
             mqttMsg.value = 'Test message sent!';
         } catch {
-            mqttMsg.value = 'MQTT test failed — check broker settings.';
+            mqttMsg.value = 'MQTT test failed. Check the broker settings.';
         }
         setTimeout(() => (mqttMsg.value = null), 3000);
     }
@@ -211,7 +254,7 @@
         try {
             const result = await admin.syncSchedule();
             if (result.synced) {
-                scheduleMsg.value = `Imported — ${result.daysEnabled} days enabled from ${result.totalEntries} FPP entries.`;
+                scheduleMsg.value = `Imported: ${result.daysEnabled} days enabled from ${result.totalEntries} FPP entries.`;
                 // Reload config so the editor reflects the new schedule
                 await admin.fetchConfig();
                 editConfig.value = JSON.parse(JSON.stringify(admin.config));
@@ -219,7 +262,7 @@
                 scheduleMsg.value = result.message;
             }
         } catch {
-            scheduleMsg.value = 'Import failed — check FPP connection.';
+            scheduleMsg.value = 'Import failed. Check the FPP connection.';
         }
         setTimeout(() => (scheduleMsg.value = null), 4000);
     }
@@ -324,7 +367,7 @@
                 </div>
                 <div class="rounded-xl border border-gray-800 bg-gray-900 p-4">
                     <p class="mb-1 text-xs text-gray-400">Top Song</p>
-                    <p class="truncate text-sm font-bold text-white">{{ admin.reports.topSong || '—' }}</p>
+                    <p class="truncate text-sm font-bold text-white">{{ admin.reports.topSong || '-' }}</p>
                 </div>
             </div>
 
@@ -428,6 +471,25 @@
         </div>
 
         <!-- Playlists Tab -->
+        <div v-if="activeTab === 'reports'" class="mt-6 rounded-xl border border-gray-800 bg-gray-900 p-5">
+            <div class="mb-3 flex items-center justify-between gap-3">
+                <h3 class="text-sm font-semibold tracking-wide text-gray-300 uppercase">Supporters list</h3>
+                <span class="text-xs" :class="editConfig?.showSupporters ? 'text-green-400' : 'text-gray-500'">{{ editConfig?.showSupporters ? 'Public' : 'Hidden (turn on in Config → Pricing)' }}</span>
+            </div>
+            <p class="mb-3 text-xs text-gray-500">Latest 200 payments. Hiding a name makes that entry Anonymous; the payment itself is kept.</p>
+            <div v-if="!admin.supporters.length" class="py-6 text-center text-sm text-gray-500">No payments yet.</div>
+            <div v-else class="max-h-96 divide-y divide-gray-800 overflow-y-auto">
+                <div v-for="s in admin.supporters" :key="s.id" class="flex items-center gap-3 py-2 text-sm">
+                    <span class="min-w-0 flex-1 truncate" :class="s.name ? 'text-gray-100' : 'text-gray-500 italic'">{{ s.name || 'Anonymous' }}</span>
+                    <span class="w-16 shrink-0 text-xs text-gray-500 capitalize">{{ s.kind }}</span>
+                    <span class="w-16 shrink-0 text-right text-gray-300 tabular-nums">${{ Number(s.amount).toFixed(2) }}</span>
+                    <span class="hidden w-28 shrink-0 text-right text-xs text-gray-500 sm:block">{{ new Date(s.at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) }}</span>
+                    <button v-if="s.name" @click="admin.hideSupporterName(s.id)" class="shrink-0 rounded-md border border-gray-700 px-2 py-1 text-xs text-gray-300 hover:border-red-500/50 hover:text-red-300">Hide name</button>
+                    <span v-else class="w-[70px] shrink-0" />
+                </div>
+            </div>
+        </div>
+
         <div v-if="activeTab === 'playlists'">
             <div v-if="admin.playlists.length === 0" class="rounded-xl border border-gray-800 bg-gray-900 py-10 text-center">
                 <p class="mb-1 font-medium text-gray-400">No playlists imported yet</p>
@@ -521,32 +583,49 @@
         <!-- Config Tab -->
         <div v-if="activeTab === 'config' && editConfig">
             <form @submit.prevent="saveConfig" class="space-y-6">
-                <!-- Season toggle -->
-                <section class="rounded-xl border p-5" :class="editConfig.isSeasonActive ? 'border-green-500/30 bg-green-500/5' : 'border-red-500/30 bg-red-500/5'">
-                    <div class="flex items-center justify-between gap-4">
-                        <div>
-                            <h3 class="text-sm font-semibold tracking-wide uppercase" :class="editConfig.isSeasonActive ? 'text-green-300' : 'text-red-300'">
-                                {{ editConfig.isSeasonActive ? '🟢 Season Active' : '🔴 Season Inactive' }}
-                            </h3>
-                            <p class="mt-1 text-xs text-gray-400">
-                                {{ editConfig.isSeasonActive ? 'The public site is live. Visitors can request songs.' : 'The public site shows an off-season message. No requests accepted.' }}
-                            </p>
-                        </div>
+                <!-- Season & manual override -->
+                <section class="rounded-xl border border-gray-700 bg-gray-900 p-5">
+                    <div class="mb-1 flex items-center justify-between gap-3">
+                        <h3 class="text-sm font-semibold tracking-wide text-gray-200 uppercase">Show status</h3>
+                        <span class="rounded-full px-2.5 py-0.5 text-xs font-semibold" :class="seasonLive ? 'bg-green-500/15 text-green-300' : 'bg-red-500/15 text-red-300'">
+                            {{ seasonLive ? 'Live to visitors' : 'Closed to visitors' }}
+                        </span>
+                    </div>
+                    <p class="mb-4 text-xs text-gray-400">{{ modeHelp }}</p>
+
+                    <div class="mb-1 inline-flex overflow-hidden rounded-lg border border-gray-700" role="group" aria-label="Manual override">
                         <button
+                            v-for="m in modeOptions"
+                            :key="m.value"
                             type="button"
-                            @click="editConfig.isSeasonActive = !editConfig.isSeasonActive"
-                            class="shrink-0 rounded-xl px-5 py-2.5 text-sm font-bold transition"
-                            :class="editConfig.isSeasonActive ? 'border border-red-500/30 bg-red-500/15 text-red-300 hover:bg-red-500/25' : 'border border-green-500/30 bg-green-500/15 text-green-300 hover:bg-green-500/25'"
+                            @click="chooseMode(m.value)"
+                            class="px-4 py-2 text-sm font-medium transition"
+                            :class="editConfig.showMode === m.value ? 'bg-gray-100 text-gray-900' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'"
                         >
-                            {{ editConfig.isSeasonActive ? 'Turn Off' : 'Turn On' }}
+                            {{ m.label }}
                         </button>
                     </div>
-                    <div v-if="!editConfig.isSeasonActive" class="mt-4">
+                    <p v-if="modeMsg" class="mt-1 text-xs text-blue-400">{{ modeMsg }}</p>
+
+                    <div class="mt-5 grid gap-4 sm:grid-cols-2">
                         <label class="block">
-                            <span class="text-xs text-gray-400">Off-season message shown to visitors</span>
-                            <textarea v-model="editConfig.offSeasonMessage" rows="2" class="input mt-1 resize-none" placeholder="The holiday light show is not running right now. Check back soon!" />
+                            <span class="text-xs text-gray-400">Season starts</span>
+                            <input type="date" v-model="editConfig.seasonStart" class="input mt-1" />
+                        </label>
+                        <label class="block">
+                            <span class="text-xs text-gray-400">Season ends</span>
+                            <input type="date" v-model="editConfig.seasonEnd" :min="editConfig.seasonStart || undefined" class="input mt-1" />
                         </label>
                     </div>
+                    <p class="mt-2 text-xs text-gray-500">
+                        In Automatic mode the show only runs between these dates (inclusive, server time) and inside your weekly hours. Leave a date empty for no limit. Dates are saved with the Save button below.
+                        MQTT: publish <span class="font-mono">on</span>, <span class="font-mono">off</span> or <span class="font-mono">auto</span> to <span class="font-mono">{{ editConfig.mqttTopicPrefix || 'qtm' }}/control/show</span>.
+                    </p>
+
+                    <label class="mt-4 block">
+                        <span class="text-xs text-gray-400">Message shown to visitors when the show is closed</span>
+                        <textarea v-model="editConfig.offSeasonMessage" rows="2" class="input mt-1 resize-none" placeholder="The holiday light show is not running right now. Check back soon!" />
+                    </label>
                 </section>
 
                 <!-- FPP -->
@@ -562,7 +641,7 @@
                         <label class="block">
                             <span class="text-xs text-gray-400">Default Playlist Name</span>
                             <select v-if="admin.playlists.length" v-model="editConfig.defaultPlaylistName" class="input mt-1">
-                                <option value="">— None —</option>
+                                <option value="">None</option>
                                 <option v-for="p in admin.playlists" :key="p.id" :value="p.fppPlaylistName">
                                     {{ p.fppPlaylistName }}
                                 </option>
@@ -676,6 +755,27 @@
                             <input type="number" step="0.01" min="1.00" v-model="editConfig.donateCost" class="input mt-1" />
                         </label>
                     </div>
+
+                    <h4 class="mt-6 mb-1 text-xs font-semibold tracking-wide text-gray-300 uppercase">Season donation goal</h4>
+                    <p class="mb-3 text-xs text-gray-500">Shown on the home page as a row of bulbs that light up as you get closer. Counts every payment (requests, boosts and donations) from 30 days before the season start date (or the last year if no start date is set). Set to 0 to hide it.</p>
+                    <div class="grid gap-4 md:grid-cols-2">
+                        <label class="block">
+                            <span class="text-xs text-gray-400">Goal ($)</span>
+                            <input type="number" step="1" min="0" v-model.number="editConfig.donationGoal" class="input mt-1" />
+                        </label>
+                        <label class="block">
+                            <span class="text-xs text-gray-400">What it's for</span>
+                            <input type="text" maxlength="120" v-model="editConfig.donationGoalLabel" class="input mt-1" placeholder="Help us add 2,000 new lights next year" />
+                        </label>
+                    </div>
+
+                    <label class="mt-6 flex cursor-pointer items-start gap-3">
+                        <input type="checkbox" v-model="editConfig.showSupporters" class="mt-0.5 h-4 w-4 accent-green-500" />
+                        <span>
+                            <span class="block text-sm font-medium text-gray-200">Public supporters list</span>
+                            <span class="block text-xs text-gray-500">Shows this season's requests, boosts and donations with amounts to everyone. Visitors choose whether to show their name; the default is Anonymous. You can hide any name from the Reports tab.</span>
+                        </span>
+                    </label>
                 </section>
 
                 <!-- Rate Limits -->
@@ -689,6 +789,31 @@
                         <label class="block">
                             <span class="text-xs text-gray-400">Window (minutes)</span>
                             <input type="number" min="1" v-model="editConfig.rateLimitWindowMinutes" class="input mt-1" />
+                        </label>
+                    </div>
+                </section>
+
+                <!-- Listen live -->
+                <section class="rounded-xl border border-gray-800 bg-gray-900 p-5">
+                    <div class="mb-1 flex items-center justify-between gap-3">
+                        <h3 class="text-sm font-semibold tracking-wide text-gray-300 uppercase">Listen live (phone audio)</h3>
+                        <span v-if="listenStatus" class="rounded-full px-2.5 py-0.5 text-xs font-semibold" :class="listenStatus.live ? 'bg-green-500/15 text-green-300' : 'bg-gray-700 text-gray-400'">
+                            {{ listenStatus.live ? `Receiving audio · ${listenStatus.listeners} listening` : 'No audio from FPP' }}
+                        </span>
+                    </div>
+                    <p class="mb-4 text-xs text-gray-500">
+                        Visitors tap <em>Listen</em> and hear the show on their phone, about 0.15 to 0.3 seconds behind the lights. Audio goes through this site's normal address, so no port forwarding is needed. The button only appears while audio is arriving.
+                        In FPP, enable <strong>Opus RTP Audio Streaming</strong> and send it to this server's LAN IP on UDP port {{ listenStatus?.port ?? 5004 }} (don't port-forward it).
+                        <a href="https://github.com/thebradleysanders/QueueTheMagic/blob/main/docs/LISTEN.md" target="_blank" rel="noopener" class="text-blue-400 hover:underline">Setup guide</a>
+                    </p>
+                    <div class="grid gap-4 md:grid-cols-2">
+                        <label class="flex cursor-pointer items-center gap-3">
+                            <input type="checkbox" v-model="editConfig.listenEnabled" class="h-4 w-4 accent-green-500" />
+                            <span class="text-sm text-gray-200">Show the Listen button</span>
+                        </label>
+                        <label class="block">
+                            <span class="text-xs text-gray-400">Max listeners (each uses about 64 kbps of your upload)</span>
+                            <input type="number" min="1" max="500" v-model.number="editConfig.listenMaxListeners" class="input mt-1" />
                         </label>
                     </div>
                 </section>
@@ -774,7 +899,7 @@
                     </div>
                     <div>
                         <span class="text-xs text-gray-500">Active Item</span>
-                        <p class="font-mono text-white">{{ admin.diagnostics.activeQueueItemId ?? '—' }}</p>
+                        <p class="font-mono text-white">{{ admin.diagnostics.activeQueueItemId ?? '-' }}</p>
                     </div>
                 </div>
 

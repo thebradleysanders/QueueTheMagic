@@ -1,4 +1,7 @@
 <script setup>
+    import SupporterNameField from '@/components/SupporterNameField.vue';
+    import { useSupporterName } from '@/composables/useSupporterName';
+    import Celebrate from '@/components/Celebrate.vue';
     import axios from 'axios';
 
     import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
@@ -11,6 +14,7 @@
     const emit = defineEmits(['close']);
     const showStore = useShowStore();
     const sessionStore = useSessionStore();
+    const { displayName } = useSupporterName();
     const { createIntent, mountPaymentElement, confirmPayment } = usePayment();
 
     const isDev = import.meta.env.DEV;
@@ -60,7 +64,8 @@
                 await axios.post('/api/payment/donate', {
                     paymentIntentId: 'dev_test',
                     sessionToken: sessionStore.sessionToken,
-                    amount: amount.value
+                    amount: amount.value,
+                    displayName: displayName.value
                 });
                 step.value = 'done';
                 return;
@@ -85,7 +90,8 @@
             await axios.post('/api/payment/donate', {
                 paymentIntentId,
                 sessionToken: sessionStore.sessionToken,
-                amount: amount.value
+                amount: amount.value,
+                displayName: displayName.value
             });
             step.value = 'done';
         } catch (e) {
@@ -98,14 +104,14 @@
 
 <template>
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-label="Donate" @click.self="emit('close')">
-        <div class="bg-card border-base w-full max-w-sm overflow-hidden rounded-2xl border">
+        <div class="bg-card border-base w-full max-w-sm overflow-hidden rounded-xl border">
             <div class="border-base flex items-center justify-between border-b px-6 py-4">
-                <h2 class="text-main text-lg font-bold">Donate Just Because ❤️</h2>
-                <button @click="emit('close')" aria-label="Close" class="text-hint hover:text-main text-xl">✕</button>
+                <h2 class="text-main text-lg font-semibold">Donate</h2>
+                <button @click="emit('close')" aria-label="Close" class="text-hint hover:text-main text-lg"><font-awesome-icon :icon="['fas', 'xmark']" /></button>
             </div>
 
             <div v-if="step === 'select'" class="p-5">
-                <p class="text-hint mb-4 text-sm">Support the show — no song required!</p>
+                <p class="text-hint mb-4 text-sm">Support the show. No song required.</p>
 
                 <div v-if="errorMsg" class="mb-4 rounded-lg bg-red-500/20 p-3 text-sm text-red-500">{{ errorMsg }}</div>
 
@@ -129,8 +135,10 @@
                     />
                 </div>
 
+                <SupporterNameField class="mb-4" />
+
                 <button @click="donate" :disabled="!amountValid || loading" class="btn-ac w-full rounded-xl py-3 font-semibold transition disabled:opacity-40">
-                    {{ loading ? 'Processing...' : isDev ? `⚡ Donate $${amount ?? '—'} (dev)` : `Donate $${amount?.toFixed(2) ?? '—'}` }}
+                    {{ loading ? 'Processing...' : isDev ? `Donate $${amount ?? '-'} (dev)` : `Donate $${amount?.toFixed(2) ?? '-'}` }}
                 </button>
             </div>
 
@@ -145,9 +153,9 @@
             <div v-if="step === 'paying'" class="text-hint p-5 text-center">Processing payment...</div>
 
             <div v-if="step === 'done'" class="p-8 text-center">
-                <div class="mb-3 text-4xl">🙏</div>
-                <p class="text-main text-lg font-bold">Thank you!</p>
-                <p class="text-hint mt-1 text-sm">Your donation keeps the lights on.</p>
+                <Celebrate :count="28" :spread="140"><font-awesome-icon :icon="['fas', 'heart']" class="text-ac2 mb-3 text-3xl" /></Celebrate>
+                <p class="text-main text-lg font-semibold">Thank you!</p>
+                <p class="text-hint mt-1 text-sm">Your donation helps keep the lights on.</p>
                 <button @click="emit('close')" class="btn-ac mt-4 rounded-lg px-6 py-2 text-sm">Done</button>
             </div>
         </div>

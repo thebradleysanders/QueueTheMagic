@@ -26,7 +26,7 @@ public class QueueController(
         return BadRequest(new {
             error = refunded
                 ? $"{error} You have not been charged (your payment was refunded)."
-                : $"{error} We could not refund you automatically — please contact the show owner."
+                : $"{error} We could not refund you automatically. Please contact the show owner."
         });
     }
 
@@ -37,9 +37,9 @@ public class QueueController(
 
         await using var db = await dbFactory.CreateDbContextAsync();
         var config = await db.ShowConfigs.FindAsync(1);
-        if (config != null && !config.IsSeasonActive)
+        if (config != null && !ScheduleHelper.IsSeasonActive(config))
             return BadRequest(new { error = "The show is not running this season." });
-        if (config != null && !ScheduleHelper.IsOpen(config.ShowScheduleJson))
+        if (config != null && !ScheduleHelper.IsOpen(config))
             return BadRequest(new { error = "The show is currently closed. Please come back during show hours." });
 
         // Hold the lock across verify + redeem so one payment can only ever buy one song.
@@ -50,7 +50,7 @@ public class QueueController(
                 new Dictionary<string, string> { ["songId"] = request.SongId.ToString() });
             if (!verified.Ok) return BadRequest(new { error = verified.Error });
 
-            var (item, error) = await queueService.AddToQueueAsync(request.SongId, request.PaymentIntentId, request.SessionToken);
+            var (item, error) = await queueService.AddToQueueAsync(request.SongId, request.PaymentIntentId, request.SessionToken, request.DisplayName);
             if (error != null) return await RefundAndFail(request.PaymentIntentId, error);
 
             queueTrigger.TriggerImmediateCheck();
@@ -78,7 +78,7 @@ public class QueueController(
                 new Dictionary<string, string> { ["queueItemId"] = id.ToString() });
             if (!verified.Ok) return BadRequest(new { error = verified.Error });
 
-            var (success, error) = await queueService.BumpAsync(id, request.PaymentIntentId, request.SessionToken);
+            var (success, error) = await queueService.BumpAsync(id, request.PaymentIntentId, request.SessionToken, request.DisplayName);
             if (!success) return await RefundAndFail(request.PaymentIntentId, error ?? "Boost failed.");
 
             queueTrigger.TriggerImmediateCheck();

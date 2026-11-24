@@ -41,7 +41,25 @@ Every topic is `<prefix>/<event>`. Payloads are JSON. Messages are not retained,
 | `qtm/nowplaying` | A **requested** song starts playing | `{"title":"Jingle Bells","artist":"","playing":true}` |
 | `qtm/nowplaying` | A requested song finishes | `{"title":null,"playing":false}` |
 | `qtm/visit` | A device opens the site (see below) | `{"newDevice":true,"visitsToday":42,"timestamp":"2026-12-01T00:15:00Z"}` |
+| `qtm/cheer` | Someone taps **Cheer** on the home page (max once per 2 s per phone) | `{"cheersToday":212,"timestamp":"2026-12-01T00:15:00Z"}` |
+| `qtm/status` | The show mode changes or config is saved (**retained**) | `{"mode":"auto","seasonActive":true,"open":true,"running":true,"seasonStart":"2026-12-01","seasonEnd":"2027-01-05"}` |
 | `qtm/test` | You press the test button in admin | `{"message":"QueueTheMagic MQTT test","timestamp":"..."}` |
+
+### Controlling the show
+
+QueueTheMagic also **listens** on one topic, so Home Assistant (or anything else) can switch the show:
+
+| Topic | Payload | Effect |
+|---|---|---|
+| `qtm/control/show` | `on` | Force the show open now, ignoring the season dates and weekly hours |
+| `qtm/control/show` | `off` | Force the show closed |
+| `qtm/control/show` | `auto` | Go back to following the season dates and weekly hours |
+
+`{"mode":"on"}` also works. The new state is echoed on `qtm/status`. Anyone who can publish to your broker can switch the show, so use broker credentials and ACLs.
+
+```bash
+mosquitto_pub -h <broker-ip> -u <user> -P <password> -t 'qtm/control/show' -m on
+```
 
 Notes:
 
@@ -85,6 +103,38 @@ automation:
       - service: light.turn_on
         target: { entity_id: light.porch }
         data: { flash: short }
+```
+
+### Home Assistant: let the audience flash a prop
+
+```yaml
+automation:
+  - alias: "Audience cheer"
+    mode: single          # ignore cheers while the flash is still running
+    trigger:
+      - platform: mqtt
+        topic: "qtm/cheer"
+    action:
+      - service: switch.turn_on
+        target: { entity_id: switch.strobe }
+      - delay: "00:00:02"
+      - service: switch.turn_off
+        target: { entity_id: switch.strobe }
+```
+
+### Home Assistant: show on/off switch
+
+```yaml
+mqtt:
+  switch:
+    - name: "Light Show"
+      command_topic: "qtm/control/show"
+      state_topic: "qtm/status"
+      value_template: "{{ value_json.mode }}"
+      payload_on: "on"
+      payload_off: "off"
+      state_on: "on"
+      state_off: "off"
 ```
 
 ### Home Assistant: count visitors on a dashboard

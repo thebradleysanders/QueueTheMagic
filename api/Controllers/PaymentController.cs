@@ -13,6 +13,7 @@ namespace XlightsQueue.Controllers;
 public class PaymentController(
     PaymentService paymentService,
     MqttService mqttService,
+    CommunityService community,
     IWebHostEnvironment env,
     IDbContextFactory<AppDbContext> dbFactory) : ControllerBase {
 
@@ -44,9 +45,9 @@ public class PaymentController(
                 break;
             case "song":
                 if (!request.SongId.HasValue) return BadRequest(new { error = "Missing song." });
-                if (!config.IsSeasonActive)
+                if (!ScheduleHelper.IsSeasonActive(config))
                     return BadRequest(new { error = "The show is not running this season." });
-                if (!ScheduleHelper.IsOpen(config.ShowScheduleJson))
+                if (!ScheduleHelper.IsOpen(config))
                     return BadRequest(new { error = "The show is currently closed. Please come back during show hours." });
                 var songError = await QueueService.ValidateRequestAsync(db, config, request.SongId.Value, request.SessionToken);
                 if (songError != null) return BadRequest(new { error = songError });
@@ -89,10 +90,12 @@ public class PaymentController(
                 Amount = amount,
                 Type = DonationType.Donation,
                 SessionToken = request.SessionToken,
+                DisplayName = DisplayNameHelper.Clean(request.DisplayName),
             });
             await db.SaveChangesAsync();
 
             await mqttService.PublishAsync("donation", new { amount, type = "just_because" });
+            await community.AddActivityAsync("donation", null, amount, DisplayNameHelper.Clean(request.DisplayName));
 
             return Ok(new { success = true });
         } finally {
