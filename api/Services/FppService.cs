@@ -270,6 +270,16 @@ public class FppService(IDbContextFactory<AppDbContext> dbFactory, ILogger<FppSe
         return await StartPlaylistAsync(name);
     }
 
+    /// <summary>
+    /// Asks FPP to stop the running playlist after the current item finishes (it then plays the
+    /// playlist's lead-out and goes idle), instead of cutting the song off.
+    /// </summary>
+    public async Task<bool> StopGracefullyAsync() {
+        var res = await PostCommandAsync("Stop Gracefully", ["false"]);
+        if (res?.IsSuccessStatusCode == true) return true;
+        return await PostThenGetAsync("/api/playlists/stopgracefully");
+    }
+
     // POST (or legacy GET) /api/playlists/stop
     public async Task<bool> StopPlaylistAsync() {
         return await PostThenGetAsync("/api/playlists/stop");

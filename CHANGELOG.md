@@ -3,6 +3,11 @@
 Every release is published on the [Releases page](../../releases) with the notes below.
 Upgrading: `docker compose pull && docker compose up -d` (database changes are applied automatically).
 
+## [1.0.18]
+
+### Fixed
+- **Requests no longer get stuck behind a looping default playlist when "Interrupt for requested songs" is off.** The current song now finishes (FPP's "Stop Gracefully", which also runs the playlist's lead-out), then the request plays, then the default playlist resumes with the next song. Before, a request waited for the whole playlist to end, which never happens if it loops.
+
 ## [1.0.17]
 
 ### Added

@@ -42,6 +42,8 @@ public class QueueManagerService(
     // requested song is its own one-song playlist, so we do it for the whole queue session ourselves.
     // Where the default playlist was when a requested song interrupted it, so it can carry on afterwards.
     private (string Playlist, int Item)? _resume;
+    private bool _gracefulPending;                          // FPP was asked to stop after the current song
+    private DateTime _lastGracefulAttempt = DateTime.MinValue; // throttles retries if FPP refuses
 
     // Show-level sequences: once when the show opens, once when it closes.
     private bool? _wasRunning;           // null until the first check, so a restart mid-show doesn't replay the opener
@@ -88,14 +90,14 @@ public class QueueManagerService(
     /// When a request interrupts the default playlist, remember which item to come back to: the same
     /// song from its start if it was less than half played, otherwise the next one.
     /// </summary>
-    private static (string, int)? WorkOutResume(FppStatus fpp, Models.ShowConfig config) {
+    private static (string, int)? WorkOutResume(FppStatus fpp, Models.ShowConfig config, bool nextItem = false) {
         var cp = fpp.current_playlist;
         if (cp == null || string.IsNullOrEmpty(config.DefaultPlaylistName)
             || !string.Equals(cp.playlist, config.DefaultPlaylistName, StringComparison.OrdinalIgnoreCase)) return null;
         if (!int.TryParse(cp.index, out var index) || !int.TryParse(cp.count, out var count) || index < 1 || count < 1) return null;
         var played = int.TryParse(fpp.seconds_played, out var sp) ? sp : 0;
         var remaining = int.TryParse(fpp.seconds_remaining, out var sr) ? sr : 0;
-        var next = played + remaining > 0 && played > remaining ? index + 1 : index;
+        var next = nextItem || (played + remaining > 0 && played > remaining) ? index + 1 : index;
         return (cp.playlist, next > count ? 1 : next);
     }
 
@@ -225,6 +227,22 @@ public class QueueManagerService(
                 logger.LogInformation("Stopping FPP playback to play queue song '{Title}'", nextPending.Song.Title);
                 _resume = WorkOutResume(fppStatus, config);
                 await fppService.StopPlaylistAsync();
+                RecordCommand();
+                return;
+            }
+
+            // Not interrupting: let the current song finish, then FPP ends the playlist (running its
+            // lead-out) and the request plays. Without this a looping default playlist never goes idle.
+            if (fppPlayingUnqueued && !config.InterruptForUserSongs && fppStatus.IsPlayingPlaylist
+                && !_gracefulPending && DateTime.UtcNow - _lastGracefulAttempt > TimeSpan.FromSeconds(30)) {
+                logger.LogInformation("Request '{Title}' is waiting: asking FPP to stop after the current song", nextPending.Song.Title);
+                var resume = WorkOutResume(fppStatus, config, nextItem: true);
+                if (await fppService.StopGracefullyAsync()) {
+                    _gracefulPending = true;
+                    _resume = resume;                 // come back to the song after the one that finishes
+                    _rigPlaylist = null;              // FPP runs this playlist's own lead-out as it ends
+                }
+                _lastGracefulAttempt = DateTime.UtcNow;
                 RecordCommand();
                 return;
             }

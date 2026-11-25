@@ -908,7 +908,7 @@
                             <input type="checkbox" v-model="editConfig.interruptForUserSongs" class="mt-1 accent-green-500" />
                             <span>
                                 Interrupt it for requested songs
-                                <span class="block text-xs text-gray-500">Otherwise a request waits for the current song to finish. The default playlist resumes where it left off.</span>
+                                <span class="block text-xs text-gray-500">On: the default playlist stops right away and the request plays within a few seconds. Off: the current song finishes first (then the playlist's lead-out), and the request plays after it. Either way the default playlist resumes afterwards.</span>
                             </span>
                         </label>
                     </div>
