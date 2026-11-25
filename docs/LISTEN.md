@@ -48,7 +48,7 @@ If the site is behind your own reverse proxy (Caddy, Traefik, Nginx Proxy Manage
 
 ## 3. Turn it on
 
-**Admin → Config → Listen live**: tick **Show the Listen button** and set **Max listeners**. The badge at the top of that section shows whether audio is arriving and how many people are listening.
+**Admin → Config → Audience → Listen live**: tick **Show the Listen button** and set **Max listeners**. The badge at the top of that section shows whether audio is arriving and how many people are listening.
 
 ## Bandwidth
 

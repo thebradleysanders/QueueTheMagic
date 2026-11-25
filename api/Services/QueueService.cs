@@ -162,7 +162,7 @@ public class QueueService(IDbContextFactory<AppDbContext> dbFactory, ILogger<Que
     public async Task<QueueItem?> GetNextPendingAsync(bool guestOnly = false) {
         await using var db = await dbFactory.CreateDbContextAsync();
         return await db.QueueItems
-            .Include(q => q.Song)
+            .Include(q => q.Song).ThenInclude(s => s.Playlist)
             .Where(q => q.Status == QueueItemStatus.Pending && (!guestOnly || q.IsGuest))
             .OrderBy(q => q.Position)
             .FirstOrDefaultAsync();

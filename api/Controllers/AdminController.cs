@@ -78,6 +78,8 @@ public class AdminController(
         config.AutoPlayDefault = updated.AutoPlayDefault;
         config.InterruptForUserSongs = updated.InterruptForUserSongs;
         config.FppPollingIntervalSeconds = Math.Max(2, updated.FppPollingIntervalSeconds);
+        config.OpenSequence = (updated.OpenSequence ?? string.Empty).Trim() is var os && os.Length > 200 ? os[..200] : os;
+        config.CloseSequence = (updated.CloseSequence ?? string.Empty).Trim() is var cs && cs.Length > 200 ? cs[..200] : cs;
         config.MaxSongsPerWindow = updated.MaxSongsPerWindow;
         config.RateLimitWindowMinutes = updated.RateLimitWindowMinutes;
         config.DefaultTheme = updated.DefaultTheme;

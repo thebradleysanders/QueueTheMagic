@@ -5,6 +5,8 @@
 
     import { computed, onMounted, onUnmounted, ref } from 'vue';
 
+    import AdminSubNav from '@/components/AdminSubNav.vue';
+
     import { moveItem, useDragReorder } from '@/composables/useDragReorder';
 
     import { useAdminStore } from '@/stores/admin';
@@ -15,7 +17,44 @@
     const router = useRouter();
     const admin = useAdminStore();
     const showStore = useShowStore();
-    const activeTab = ref('reports');
+    const activeTab = ref('queue');
+    const cfgTab = ref('show');
+    const repTab = ref('money');
+    const cfgSections = [
+        { key: 'show', label: 'Show & schedule', hint: 'Season, hours, new season' },
+        { key: 'fpp', label: 'Falcon Player', hint: 'Connection, playlists, sequences' },
+        { key: 'requests', label: 'Requests & money', hint: 'Prices, goal, limits' },
+        { key: 'audience', label: 'Audience', hint: 'Friends & family, Listen live' },
+        { key: 'site', label: 'Site & integrations', hint: 'Name, MQTT, social' }
+    ];
+    const repSections = [
+        { key: 'money', label: 'Money', hint: 'Donations and supporters' },
+        { key: 'audience', label: 'Audience', hint: 'Visits and Listen live' },
+        { key: 'songs', label: 'Songs', hint: 'Played, queued, ratings' }
+    ];
+    const mainTabs = [
+        { key: 'queue', label: 'Queue', icon: 'list-ol' },
+        { key: 'reports', label: 'Reports', icon: 'chart-bar' },
+        { key: 'playlists', label: 'Playlists', icon: 'music' },
+        { key: 'config', label: 'Config', icon: 'cog' }
+    ];
+
+    // Unsaved-changes tracking (the show override saves on its own, so it is ignored here)
+    const snap = c => JSON.stringify({ ...c, showMode: undefined });
+    const savedSnap = ref('');
+    const dirty = computed(() => !!editConfig.value && snap(editConfig.value) !== savedSnap.value);
+    function discardChanges() {
+        editConfig.value = { ...JSON.parse(JSON.stringify(admin.config)), showMode: editConfig.value.showMode };
+        savedSnap.value = snap(editConfig.value);
+    }
+    function warnIfDirty(e) {
+        if (dirty.value) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    }
+    onMounted(() => window.addEventListener('beforeunload', warnIfDirty));
+    onUnmounted(() => window.removeEventListener('beforeunload', warnIfDirty));
     const saving = ref(false);
     const saveMsg = ref(null);
     const syncSongsMsg = ref(null);
@@ -32,8 +71,9 @@
     const songSaving = ref({}); // songId → bool
 
     onMounted(async () => {
-        await Promise.all([admin.fetchReports(), admin.fetchSupporters(), admin.fetchGuests(), admin.fetchRatings(), admin.fetchConfig(), admin.fetchDiagnostics(), admin.fetchPlaylists()]);
+        await Promise.all([admin.fetchReports(), admin.fetchSupporters(), admin.fetchGuests(), admin.fetchRatings(), admin.fetchConfig(), admin.fetchDiagnostics(), admin.fetchPlaylists(), admin.fetchFppSequences()]);
         editConfig.value = JSON.parse(JSON.stringify(admin.config));
+        savedSnap.value = snap(editConfig.value);
         diagInterval.value = setInterval(() => admin.fetchDiagnostics(), 5000);
     });
 
@@ -59,6 +99,7 @@
             // Empty number boxes come through as '' but the server wants null
             for (const k of ['latitude', 'longitude']) if (editConfig.value[k] === '') editConfig.value[k] = null;
             await admin.saveConfig(editConfig.value);
+            savedSnap.value = snap(editConfig.value);
             saveMsg.value = 'Saved!';
             setTimeout(() => (saveMsg.value = null), 2000);
         } catch {
@@ -425,64 +466,105 @@
 </script>
 
 <template>
-    <main class="mx-auto max-w-5xl px-4 py-8">
-        <div class="mb-8 flex items-center justify-between">
-            <h1 class="text-2xl font-bold">Admin Dashboard</h1>
+    <main class="mx-auto max-w-6xl px-4 py-6 md:py-8">
+        <div class="mb-5 flex items-center justify-between">
+            <h1 class="text-2xl font-bold">Admin</h1>
             <button @click="logout" class="text-sm font-bold text-red-500 hover:text-white">Logout</button>
         </div>
 
+        <!-- Always visible: is the show open, and the manual override -->
+        <div
+            v-if="editConfig"
+            class="mb-5 flex flex-wrap items-center gap-x-4 gap-y-3 rounded-xl border p-3"
+            :class="editConfig.showMode === 'auto' ? 'border-gray-800 bg-gray-900' : 'border-yellow-500/50 bg-yellow-500/10'"
+        >
+            <span class="rounded-full px-2.5 py-0.5 text-xs font-semibold" :class="seasonLive ? 'bg-green-500/15 text-green-300' : 'bg-red-500/15 text-red-300'">
+                {{ seasonLive ? 'Live to visitors' : 'Closed to visitors' }}
+            </span>
+            <p class="min-w-48 flex-1 text-xs" :class="editConfig.showMode === 'auto' ? 'text-gray-400' : 'text-yellow-100'">
+                <strong v-if="editConfig.showMode !== 'auto'">Manual override. </strong>{{ modeHelp }}
+            </p>
+            <span v-if="modeMsg" class="text-xs text-blue-400">{{ modeMsg }}</span>
+            <span v-if="admin.diagnostics" class="hidden text-xs text-gray-500 sm:inline">
+                Player:
+                <span class="font-mono text-gray-300">{{ admin.diagnostics.state }}</span>
+            </span>
+            <div class="inline-flex overflow-hidden rounded-lg border border-gray-700" role="group" aria-label="Manual override">
+                <button
+                    v-for="m in modeOptions"
+                    :key="m.value"
+                    type="button"
+                    @click="chooseMode(m.value)"
+                    class="px-3 py-1.5 text-sm font-medium transition"
+                    :class="editConfig.showMode === m.value ? 'bg-gray-100 text-gray-900' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'"
+                >
+                    {{ m.label }}
+                </button>
+            </div>
+        </div>
+
         <!-- Tabs -->
-        <div class="mb-8 flex flex-wrap gap-1 rounded-xl border border-gray-800 bg-gray-900 p-1">
+        <div class="mb-6 flex gap-1 rounded-xl border border-gray-800 bg-gray-900 p-1">
             <button
-                v-for="tab in ['reports', 'playlists', 'config', 'queue']"
-                :key="tab"
-                @click="activeTab = tab"
-                class="min-w-0 flex-1 rounded-lg py-2 text-sm capitalize transition"
-                :class="activeTab === tab ? 'bg-gray-700 font-medium text-white' : 'text-gray-400 hover:text-white'"
+                v-for="tab in mainTabs"
+                :key="tab.key"
+                @click="activeTab = tab.key"
+                class="min-w-0 flex-1 rounded-lg py-2 text-sm transition"
+                :class="activeTab === tab.key ? 'bg-gray-700 font-medium text-white' : 'text-gray-400 hover:text-white'"
             >
-                <template v-if="tab === 'reports'">
-                    <font-awesome-icon :icon="['fas', 'chart-bar']" class="ml-1 text-gray-300" />
-                    Reports
-                </template>
-                <template v-if="tab === 'playlists'">
-                    <font-awesome-icon :icon="['fas', 'music']" class="ml-1 text-gray-300" />
-                    Playlists
-                </template>
-                <template v-if="tab === 'config'">
-                    <font-awesome-icon :icon="['fas', 'cog']" class="ml-1 text-gray-300" />
-                    Config
-                </template>
-                <template v-if="tab === 'queue'">
-                    <font-awesome-icon :icon="['fas', 'list-ol']" class="ml-1 text-gray-300" />
-                    Queue
-                </template>
+                <font-awesome-icon :icon="['fas', tab.icon]" class="mr-1 text-gray-300" />
+                {{ tab.label }}
+                <span v-if="tab.key === 'config' && dirty" class="ml-1 inline-block size-2 rounded-full bg-yellow-400" title="Unsaved changes" />
             </button>
         </div>
 
-        <!-- Reports Tab (includes Ratings) -->
-        <div v-if="activeTab === 'reports'">
-            <!-- Donation + queue stat cards -->
-            <div v-if="admin.reports" class="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+        <!-- Reports Tab -->
+        <div v-if="activeTab === 'reports'" class="md:grid md:grid-cols-[12.5rem_minmax(0,1fr)] md:gap-6">
+            <AdminSubNav v-model="repTab" :items="repSections" />
+            <div class="min-w-0">
+                <!-- Money -->
+                <div v-show="repTab === 'money'" class="flex flex-col gap-6">
+                    <div v-if="admin.reports" class="grid grid-cols-2 gap-4">
                 <div class="rounded-xl border border-gray-800 bg-gray-900 p-4">
                     <p class="mb-1 text-xs text-gray-400">Total Donations</p>
                     <p class="text-2xl font-bold text-green-400">${{ Number(admin.reports.totalDonations).toFixed(2) }}</p>
                 </div>
                 <div class="rounded-xl border border-gray-800 bg-gray-900 p-4">
-                    <p class="mb-1 text-xs text-gray-400">Songs Played</p>
-                    <p class="text-2xl font-bold text-white">{{ admin.reports.totalSongsPlayed }}</p>
-                </div>
-                <div class="rounded-xl border border-gray-800 bg-gray-900 p-4">
                     <p class="mb-1 text-xs text-gray-400">Highest Donation</p>
                     <p class="text-2xl font-bold text-yellow-400">${{ Number(admin.reports.highestDonation).toFixed(2) }}</p>
                 </div>
-                <div class="rounded-xl border border-gray-800 bg-gray-900 p-4">
-                    <p class="mb-1 text-xs text-gray-400">Top Song</p>
-                    <p class="truncate text-sm font-bold text-white">{{ admin.reports.topSong || '-' }}</p>
+                    </div>
+                    <div v-if="admin.reports" class="grid gap-6">
+                <div class="rounded-xl border border-gray-800 bg-gray-900 p-5">
+                    <p class="mb-4 text-sm text-gray-400">Daily Donations (30d)</p>
+                    <div class="h-48">
+                        <Line :data="donationChartData" :options="chartOptions" />
+                    </div>
                 </div>
-            </div>
+                    </div>
+                    <div class="rounded-xl border border-gray-800 bg-gray-900 p-5">
+                                <div class="mb-3 flex items-center justify-between gap-3">
+                                    <h3 class="text-sm font-semibold tracking-wide text-gray-300 uppercase">Supporters list</h3>
+                                    <span class="text-xs" :class="editConfig?.showSupporters ? 'text-green-400' : 'text-gray-500'">{{ editConfig?.showSupporters ? 'Public' : 'Hidden (turn on in Config → Requests & money)' }}</span>
+                                </div>
+                                <p class="mb-3 text-xs text-gray-500">Latest 200 payments. Hiding a name makes that entry Anonymous; the payment itself is kept.</p>
+                                <div v-if="!admin.supporters.length" class="py-6 text-center text-sm text-gray-500">No payments yet.</div>
+                                <div v-else class="max-h-96 divide-y divide-gray-800 overflow-y-auto">
+                                    <div v-for="s in admin.supporters" :key="s.id" class="flex items-center gap-3 py-2 text-sm">
+                                        <span class="min-w-0 flex-1 truncate" :class="s.name ? 'text-gray-100' : 'text-gray-500 italic'">{{ s.name || 'Anonymous' }}</span>
+                                        <span class="w-16 shrink-0 text-xs text-gray-500 capitalize">{{ s.kind }}</span>
+                                        <span class="w-16 shrink-0 text-right text-gray-300 tabular-nums">${{ Number(s.amount).toFixed(2) }}</span>
+                                        <span class="hidden w-28 shrink-0 text-right text-xs text-gray-500 sm:block">{{ new Date(s.at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) }}</span>
+                                        <button v-if="s.name" @click="admin.hideSupporterName(s.id)" class="shrink-0 rounded-md border border-gray-700 px-2 py-1 text-xs text-gray-300 hover:border-red-500/50 hover:text-red-300">Hide name</button>
+                                        <span v-else class="w-[70px] shrink-0" />
+                                    </div>
+                                </div>
+                            </div>
+                </div>
 
-            <!-- Visitor stat cards -->
-            <div v-if="admin.reports" class="mb-6 grid grid-cols-3 gap-4">
+                <!-- Audience -->
+                <div v-show="repTab === 'audience'" class="flex flex-col gap-6">
+                    <div v-if="admin.reports" class="grid grid-cols-3 gap-4">
                 <div class="rounded-xl border border-gray-800 bg-gray-900 p-4">
                     <p class="mb-1 text-xs text-gray-400">Visits Today</p>
                     <p class="text-2xl font-bold text-sky-400">{{ admin.reports.visitsToday }}</p>
@@ -495,10 +577,8 @@
                     <p class="mb-1 text-xs text-gray-400">Unique Devices (30d)</p>
                     <p class="text-2xl font-bold text-pink-400">{{ admin.reports.uniqueDevices }}</p>
                 </div>
-            </div>
-
-            <!-- Listen live stat cards -->
-            <div v-if="admin.reports?.listen" class="mb-6">
+                    </div>
+            <div v-if="admin.reports?.listen" class="">
                 <div class="mb-2 flex items-center justify-between gap-3">
                     <h2 class="text-sm font-semibold tracking-wide text-gray-300 uppercase">Listen live (30d)</h2>
                     <span v-if="admin.reports.listen.listeningNow > 0" class="rounded-full bg-green-500/15 px-2.5 py-0.5 text-xs font-semibold text-green-300">{{ admin.reports.listen.listeningNow }} listening now</span>
@@ -529,117 +609,97 @@
                 </div>
             </div>
 
-            <!-- Charts -->
-            <div v-if="admin.reports" class="mb-8 grid gap-6 md:grid-cols-2">
-                <div class="rounded-xl border border-gray-800 bg-gray-900 p-5 md:col-span-2">
+                    <div v-if="admin.reports">
+                <div class="rounded-xl border border-gray-800 bg-gray-900 p-5">
                     <p class="mb-4 text-sm text-gray-400">Visits, Unique Devices &amp; Listen taps (30d)</p>
                     <div class="h-48">
                         <Bar :data="visitsChartData" :options="chartOptions" />
                     </div>
                 </div>
-                <div class="rounded-xl border border-gray-800 bg-gray-900 p-5">
-                    <p class="mb-4 text-sm text-gray-400">Daily Donations (30d)</p>
-                    <div class="h-48">
-                        <Line :data="donationChartData" :options="chartOptions" />
                     </div>
                 </div>
+
+                <!-- Songs -->
+                <div v-show="repTab === 'songs'" class="flex flex-col gap-6">
+                    <div v-if="admin.reports" class="grid grid-cols-2 gap-4">
+                <div class="rounded-xl border border-gray-800 bg-gray-900 p-4">
+                    <p class="mb-1 text-xs text-gray-400">Songs Played</p>
+                    <p class="text-2xl font-bold text-white">{{ admin.reports.totalSongsPlayed }}</p>
+                </div>
+                <div class="rounded-xl border border-gray-800 bg-gray-900 p-4">
+                    <p class="mb-1 text-xs text-gray-400">Top Song</p>
+                    <p class="truncate text-sm font-bold text-white">{{ admin.reports.topSong || '-' }}</p>
+                </div>
+                    </div>
+                    <div v-if="admin.reports">
                 <div class="rounded-xl border border-gray-800 bg-gray-900 p-5">
                     <p class="mb-4 text-sm text-gray-400">Songs Queued (30d)</p>
                     <div class="h-48">
                         <Bar :data="queueChartData" :options="chartOptions" />
                     </div>
                 </div>
-            </div>
-
-            <!-- Reset -->
-            <div class="mb-8 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-800 bg-gray-900 p-4">
-                <div>
-                    <p class="text-sm font-medium text-gray-200">New season / reset</p>
-                    <p class="text-xs text-gray-500">Clears visitor and Listen-live stats, cheers, all donations and the supporters list (the goal restarts at $0), song ratings and played history. Songs, playlists, settings and passes are kept.</p>
-                </div>
-                <div class="flex items-center gap-3">
-                    <span v-if="resetMsg" class="text-xs text-blue-400">{{ resetMsg }}</span>
-                    <button @click="resetStats" class="rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-300 hover:bg-red-500/20">Clear for new season</button>
-                </div>
-            </div>
-
-            <!-- Song Ratings section -->
-            <div class="mb-4 flex items-center justify-between">
-                <h2 class="text-sm font-semibold tracking-wide text-gray-300 uppercase">⭐ Song Ratings</h2>
-                <button @click="admin.fetchRatings()" class="rounded-lg bg-gray-800 px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">Refresh</button>
-            </div>
-
-            <div v-if="admin.ratings.length === 0" class="rounded-xl border border-gray-800 bg-gray-900 py-10 text-center text-sm text-gray-400">No ratings yet, guests can rate songs while they play.</div>
-
-            <div v-else>
-                <!-- Rating stat cards -->
-                <div class="mb-4 grid grid-cols-3 gap-4">
-                    <div class="rounded-xl border border-gray-800 bg-gray-900 p-4 text-center">
-                        <p class="mb-1 text-xs text-gray-500">Songs Rated</p>
-                        <p class="text-2xl font-bold text-white">{{ admin.ratings.length }}</p>
                     </div>
-                    <div class="rounded-xl border border-gray-800 bg-gray-900 p-4 text-center">
-                        <p class="mb-1 text-xs text-gray-500">Total Votes</p>
-                        <p class="text-2xl font-bold text-yellow-400">{{ admin.ratings.reduce((s, r) => s + r.totalRatings, 0) }}</p>
+                    <div>
+                    <!-- Song Ratings section -->
+                    <div class="mb-4 flex items-center justify-between">
+                        <h2 class="text-sm font-semibold tracking-wide text-gray-300 uppercase">⭐ Song Ratings</h2>
+                        <button @click="admin.fetchRatings()" class="rounded-lg bg-gray-800 px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">Refresh</button>
                     </div>
-                    <div class="rounded-xl border border-gray-800 bg-gray-900 p-4 text-center">
-                        <p class="mb-1 text-xs text-gray-500">Overall Avg</p>
-                        <p class="text-2xl font-bold text-green-400">
-                            {{ (admin.ratings.reduce((s, r) => s + r.averageRating * r.totalRatings, 0) / admin.ratings.reduce((s, r) => s + r.totalRatings, 0)).toFixed(1) }}
-                        </p>
-                    </div>
-                </div>
 
-                <!-- Ratings table -->
-                <div class="overflow-hidden rounded-xl border border-gray-800 bg-gray-900">
-                    <div class="grid grid-cols-12 border-b border-gray-800 bg-gray-950 px-4 py-2.5 text-xs tracking-wide text-gray-500 uppercase">
-                        <span class="col-span-5">Song</span>
-                        <span class="col-span-3">Rating</span>
-                        <span class="col-span-2 text-center">Votes</span>
-                        <span class="col-span-2 text-right">Breakdown</span>
-                    </div>
-                    <div v-for="(r, i) in admin.ratings" :key="r.songId" class="grid grid-cols-12 items-center border-b border-gray-800/50 px-4 py-3 last:border-0" :class="i % 2 === 0 ? '' : 'bg-gray-900/50'">
-                        <div class="col-span-5 min-w-0 pr-2">
-                            <p class="truncate text-sm font-medium text-white">{{ r.title }}</p>
-                            <p class="truncate text-xs text-gray-500">{{ r.artist || r.playlistName }}</p>
+                    <div v-if="admin.ratings.length === 0" class="rounded-xl border border-gray-800 bg-gray-900 py-10 text-center text-sm text-gray-400">No ratings yet, guests can rate songs while they play.</div>
+
+                    <div v-else>
+                        <!-- Rating stat cards -->
+                        <div class="mb-4 grid grid-cols-3 gap-4">
+                            <div class="rounded-xl border border-gray-800 bg-gray-900 p-4 text-center">
+                                <p class="mb-1 text-xs text-gray-500">Songs Rated</p>
+                                <p class="text-2xl font-bold text-white">{{ admin.ratings.length }}</p>
+                            </div>
+                            <div class="rounded-xl border border-gray-800 bg-gray-900 p-4 text-center">
+                                <p class="mb-1 text-xs text-gray-500">Total Votes</p>
+                                <p class="text-2xl font-bold text-yellow-400">{{ admin.ratings.reduce((s, r) => s + r.totalRatings, 0) }}</p>
+                            </div>
+                            <div class="rounded-xl border border-gray-800 bg-gray-900 p-4 text-center">
+                                <p class="mb-1 text-xs text-gray-500">Overall Avg</p>
+                                <p class="text-2xl font-bold text-green-400">
+                                    {{ (admin.ratings.reduce((s, r) => s + r.averageRating * r.totalRatings, 0) / admin.ratings.reduce((s, r) => s + r.totalRatings, 0)).toFixed(1) }}
+                                </p>
+                            </div>
                         </div>
-                        <div class="col-span-3 flex items-center gap-1.5">
-                            <span class="text-base leading-none text-yellow-400">
-                                <span v-for="n in starsDisplay(r.averageRating).full" :key="'f' + n">★</span>
-                                <span v-if="starsDisplay(r.averageRating).half">½</span>
-                                <span v-for="n in starsDisplay(r.averageRating).empty" :key="'e' + n" class="opacity-25">★</span>
-                            </span>
-                            <span class="text-sm font-bold text-white">{{ r.averageRating }}</span>
-                        </div>
-                        <div class="col-span-2 text-center">
-                            <span class="text-sm text-gray-400">{{ r.totalRatings }}</span>
-                        </div>
-                        <div class="col-span-2 flex flex-col items-end gap-0.5">
-                            <div v-for="(count, si) in [r.fiveStars, r.fourStars, r.threeStars, r.twoStars, r.oneStar]" :key="si" class="flex w-full items-center justify-end gap-1">
-                                <div class="h-1.5 rounded-full bg-yellow-500/60" :style="`width: ${r.totalRatings > 0 ? (count / r.totalRatings) * 48 : 0}px`" />
+
+                        <!-- Ratings table -->
+                        <div class="overflow-hidden rounded-xl border border-gray-800 bg-gray-900">
+                            <div class="grid grid-cols-12 border-b border-gray-800 bg-gray-950 px-4 py-2.5 text-xs tracking-wide text-gray-500 uppercase">
+                                <span class="col-span-5">Song</span>
+                                <span class="col-span-3">Rating</span>
+                                <span class="col-span-2 text-center">Votes</span>
+                                <span class="col-span-2 text-right">Breakdown</span>
+                            </div>
+                            <div v-for="(r, i) in admin.ratings" :key="r.songId" class="grid grid-cols-12 items-center border-b border-gray-800/50 px-4 py-3 last:border-0" :class="i % 2 === 0 ? '' : 'bg-gray-900/50'">
+                                <div class="col-span-5 min-w-0 pr-2">
+                                    <p class="truncate text-sm font-medium text-white">{{ r.title }}</p>
+                                    <p class="truncate text-xs text-gray-500">{{ r.artist || r.playlistName }}</p>
+                                </div>
+                                <div class="col-span-3 flex items-center gap-1.5">
+                                    <span class="text-base leading-none text-yellow-400">
+                                        <span v-for="n in starsDisplay(r.averageRating).full" :key="'f' + n">★</span>
+                                        <span v-if="starsDisplay(r.averageRating).half">½</span>
+                                        <span v-for="n in starsDisplay(r.averageRating).empty" :key="'e' + n" class="opacity-25">★</span>
+                                    </span>
+                                    <span class="text-sm font-bold text-white">{{ r.averageRating }}</span>
+                                </div>
+                                <div class="col-span-2 text-center">
+                                    <span class="text-sm text-gray-400">{{ r.totalRatings }}</span>
+                                </div>
+                                <div class="col-span-2 flex flex-col items-end gap-0.5">
+                                    <div v-for="(count, si) in [r.fiveStars, r.fourStars, r.threeStars, r.twoStars, r.oneStar]" :key="si" class="flex w-full items-center justify-end gap-1">
+                                        <div class="h-1.5 rounded-full bg-yellow-500/60" :style="`width: ${r.totalRatings > 0 ? (count / r.totalRatings) * 48 : 0}px`" />
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Playlists Tab -->
-        <div v-if="activeTab === 'reports'" class="mt-6 rounded-xl border border-gray-800 bg-gray-900 p-5">
-            <div class="mb-3 flex items-center justify-between gap-3">
-                <h3 class="text-sm font-semibold tracking-wide text-gray-300 uppercase">Supporters list</h3>
-                <span class="text-xs" :class="editConfig?.showSupporters ? 'text-green-400' : 'text-gray-500'">{{ editConfig?.showSupporters ? 'Public' : 'Hidden (turn on in Config → Pricing)' }}</span>
-            </div>
-            <p class="mb-3 text-xs text-gray-500">Latest 200 payments. Hiding a name makes that entry Anonymous; the payment itself is kept.</p>
-            <div v-if="!admin.supporters.length" class="py-6 text-center text-sm text-gray-500">No payments yet.</div>
-            <div v-else class="max-h-96 divide-y divide-gray-800 overflow-y-auto">
-                <div v-for="s in admin.supporters" :key="s.id" class="flex items-center gap-3 py-2 text-sm">
-                    <span class="min-w-0 flex-1 truncate" :class="s.name ? 'text-gray-100' : 'text-gray-500 italic'">{{ s.name || 'Anonymous' }}</span>
-                    <span class="w-16 shrink-0 text-xs text-gray-500 capitalize">{{ s.kind }}</span>
-                    <span class="w-16 shrink-0 text-right text-gray-300 tabular-nums">${{ Number(s.amount).toFixed(2) }}</span>
-                    <span class="hidden w-28 shrink-0 text-right text-xs text-gray-500 sm:block">{{ new Date(s.at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) }}</span>
-                    <button v-if="s.name" @click="admin.hideSupporterName(s.id)" class="shrink-0 rounded-md border border-gray-700 px-2 py-1 text-xs text-gray-300 hover:border-red-500/50 hover:text-red-300">Hide name</button>
-                    <span v-else class="w-[70px] shrink-0" />
+                    </div>
                 </div>
             </div>
         </div>
@@ -779,40 +839,15 @@
 
         <!-- Config Tab -->
         <div v-if="activeTab === 'config' && editConfig">
-            <form @submit.prevent="saveConfig" class="space-y-6">
-                <div v-if="editConfig.showMode !== 'auto'" class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-yellow-500/50 bg-yellow-500/10 p-4">
-                    <p class="text-sm text-yellow-100">
-                        <strong>Manual override is {{ editConfig.showMode === 'on' ? 'FORCE ON' : 'FORCE OFF' }}.</strong>
-                        {{ editConfig.showMode === 'on' ? 'The season dates and weekly hours are being ignored, so the show (and the default playlist) runs right now.' : 'The show is closed regardless of dates or hours.' }}
-                    </p>
-                    <button type="button" @click="chooseMode('auto')" class="rounded-lg bg-yellow-400 px-4 py-2 text-sm font-semibold text-black hover:bg-yellow-300">Back to Automatic</button>
-                </div>
-
+            <form @submit.prevent="saveConfig" class="md:grid md:grid-cols-[12.5rem_minmax(0,1fr)] md:gap-6">
+                <AdminSubNav v-model="cfgTab" :items="cfgSections" />
+                <div class="flex min-w-0 flex-col gap-6 pb-24">
                 <!-- Season & manual override -->
-                <section class="rounded-xl border border-gray-700 bg-gray-900 p-5">
-                    <div class="mb-1 flex items-center justify-between gap-3">
-                        <h3 class="text-sm font-semibold tracking-wide text-gray-200 uppercase">Show status</h3>
-                        <span class="rounded-full px-2.5 py-0.5 text-xs font-semibold" :class="seasonLive ? 'bg-green-500/15 text-green-300' : 'bg-red-500/15 text-red-300'">
-                            {{ seasonLive ? 'Live to visitors' : 'Closed to visitors' }}
-                        </span>
-                    </div>
-                    <p class="mb-4 text-xs text-gray-400">{{ modeHelp }}</p>
+                <section v-show="cfgTab === 'show'" class="rounded-xl border border-gray-800 bg-gray-900 p-5">
+                    <h3 class="mb-1 text-sm font-semibold tracking-wide text-gray-300 uppercase">Season</h3>
+                    <p class="mb-4 text-xs text-gray-400">The on/off override is at the top of every admin page. In Automatic mode the show follows these dates and the weekly hours.</p>
 
-                    <div class="mb-1 inline-flex overflow-hidden rounded-lg border border-gray-700" role="group" aria-label="Manual override">
-                        <button
-                            v-for="m in modeOptions"
-                            :key="m.value"
-                            type="button"
-                            @click="chooseMode(m.value)"
-                            class="px-4 py-2 text-sm font-medium transition"
-                            :class="editConfig.showMode === m.value ? 'bg-gray-100 text-gray-900' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'"
-                        >
-                            {{ m.label }}
-                        </button>
-                    </div>
-                    <p v-if="modeMsg" class="mt-1 text-xs text-blue-400">{{ modeMsg }}</p>
-
-                    <div class="mt-5 grid gap-4 sm:grid-cols-2">
+                    <div class="grid gap-4 sm:grid-cols-2">
                         <label class="block">
                             <span class="text-xs text-gray-400">Season starts</span>
                             <input type="date" v-model="editConfig.seasonStart" class="input mt-1" />
@@ -833,46 +868,85 @@
                     </label>
                 </section>
 
-                <!-- FPP -->
-                <section class="rounded-xl border border-gray-800 bg-gray-900 p-5">
-                    <h3 class="mb-4 text-sm font-semibold tracking-wide text-gray-300 uppercase">Falcon Player (FPP)</h3>
-
-                    <!-- Connection -->
+                <!-- FPP: connection -->
+                <section v-show="cfgTab === 'fpp'" class="rounded-xl border border-gray-800 bg-gray-900 p-5">
+                    <h3 class="mb-4 text-sm font-semibold tracking-wide text-gray-300 uppercase">Connection</h3>
                     <div class="grid gap-4 md:grid-cols-2">
                         <label class="block">
-                            <span class="text-xs text-gray-400">FPP Address</span>
+                            <span class="text-xs text-gray-400">FPP address</span>
                             <input v-model="editConfig.fppAddress" class="input mt-1" placeholder="192.168.1.100" />
                         </label>
                         <label class="block">
-                            <span class="text-xs text-gray-400">Default Playlist Name</span>
-                            <select v-if="admin.playlists.length" v-model="editConfig.defaultPlaylistName" class="input mt-1">
-                                <option value="">None</option>
-                                <option v-for="p in admin.playlists" :key="p.id" :value="p.fppPlaylistName">
-                                    {{ p.fppPlaylistName }}
-                                </option>
-                            </select>
-                            <input v-else v-model="editConfig.defaultPlaylistName" class="input mt-1" placeholder="Import playlists first" />
-                        </label>
-                        <label class="block">
-                            <span class="text-xs text-gray-400">Polling Interval (seconds)</span>
+                            <span class="text-xs text-gray-400">Check FPP every (seconds)</span>
                             <input type="number" min="2" v-model="editConfig.fppPollingIntervalSeconds" class="input mt-1" />
                         </label>
                     </div>
-                    <div class="mt-4 flex gap-6">
-                        <label class="flex cursor-pointer items-center gap-2 text-sm text-gray-300">
-                            <input type="checkbox" v-model="editConfig.autoPlayDefault" class="accent-green-500" />
-                            Auto-play default playlist
+                </section>
+
+                <!-- FPP: playback -->
+                <section v-show="cfgTab === 'fpp'" class="rounded-xl border border-gray-800 bg-gray-900 p-5">
+                    <h3 class="mb-4 text-sm font-semibold tracking-wide text-gray-300 uppercase">Default playlist</h3>
+                    <label class="block md:max-w-sm">
+                        <span class="text-xs text-gray-400">Plays when nobody has requested a song</span>
+                        <select v-if="admin.playlists.length" v-model="editConfig.defaultPlaylistName" class="input mt-1">
+                            <option value="">None</option>
+                            <option v-for="p in admin.playlists" :key="p.id" :value="p.fppPlaylistName">
+                                {{ p.fppPlaylistName }}
+                            </option>
+                        </select>
+                        <input v-else v-model="editConfig.defaultPlaylistName" class="input mt-1" placeholder="Import playlists first" />
+                    </label>
+                    <div class="mt-4 flex flex-col gap-3">
+                        <label class="flex cursor-pointer items-start gap-2 text-sm text-gray-300">
+                            <input type="checkbox" v-model="editConfig.autoPlayDefault" class="mt-1 accent-green-500" />
+                            <span>
+                                Auto-play the default playlist
+                                <span class="block text-xs text-gray-500">Only while the show is open (season dates and weekly hours).</span>
+                            </span>
                         </label>
-                        <label class="flex cursor-pointer items-center gap-2 text-sm text-gray-300">
-                            <input type="checkbox" v-model="editConfig.interruptForUserSongs" class="accent-green-500" />
-                            Interrupt for user songs
+                        <label class="flex cursor-pointer items-start gap-2 text-sm text-gray-300">
+                            <input type="checkbox" v-model="editConfig.interruptForUserSongs" class="mt-1 accent-green-500" />
+                            <span>
+                                Interrupt it for requested songs
+                                <span class="block text-xs text-gray-500">Otherwise a request waits for the current song to finish. The default playlist resumes where it left off.</span>
+                            </span>
                         </label>
                     </div>
+                </section>
 
-                    <!-- Import section -->
-                    <div class="mt-5 border-t border-gray-800 pt-4">
-                        <p class="mb-3 text-xs font-semibold tracking-wide text-gray-400 uppercase">Import from FPP</p>
-                        <p class="mb-4 text-xs text-gray-500">Save your FPP address above first, then import your playlists and songs. Re-run after adding new sequences in FPP.</p>
+                <!-- FPP: show open / close sequences -->
+                <section v-show="cfgTab === 'fpp'" class="rounded-xl border border-gray-800 bg-gray-900 p-5">
+                    <h3 class="mb-1 text-sm font-semibold tracking-wide text-gray-300 uppercase">Show open and close sequences</h3>
+                    <p class="mb-4 text-xs text-gray-500">Each plays once: when the show opens (season start, show hours begin, or the override is turned on) and when it closes. The open sequence plays before any playlist lead-in, and the close sequence after the lead-out. Neither replays if the app restarts mid-show.</p>
+                    <div class="grid gap-4 md:grid-cols-2">
+                        <label class="block">
+                            <span class="text-xs text-gray-400">Open sequence</span>
+                            <select v-model="editConfig.openSequence" class="input mt-1">
+                                <option value="">None</option>
+                                <option v-if="editConfig.openSequence && !admin.fppSequences.includes(editConfig.openSequence)" :value="editConfig.openSequence">{{ editConfig.openSequence }}</option>
+                                <option v-for="s in admin.fppSequences" :key="s" :value="s">{{ s }}</option>
+                            </select>
+                        </label>
+                        <label class="block">
+                            <span class="text-xs text-gray-400">Close sequence</span>
+                            <select v-model="editConfig.closeSequence" class="input mt-1">
+                                <option value="">None</option>
+                                <option v-if="editConfig.closeSequence && !admin.fppSequences.includes(editConfig.closeSequence)" :value="editConfig.closeSequence">{{ editConfig.closeSequence }}</option>
+                                <option v-for="s in admin.fppSequences" :key="s" :value="s">{{ s }}</option>
+                            </select>
+                        </label>
+                    </div>
+                    <p v-if="!admin.fppSequences.length" class="mt-3 text-xs text-amber-400">
+                        Couldn't load the sequence list from FPP. Check the FPP address (and save it), then
+                        <button type="button" class="underline" @click="admin.fetchFppSequences()">reload the list</button>.
+                    </p>
+                </section>
+
+                <!-- FPP: import -->
+                <section v-show="cfgTab === 'fpp'" class="rounded-xl border border-gray-800 bg-gray-900 p-5">
+                    <h3 class="mb-4 text-sm font-semibold tracking-wide text-gray-300 uppercase">Import from FPP</h3>
+                    <div>
+                                                <p class="mb-4 text-xs text-gray-500">Save your FPP address first, then import your playlists and songs. Re-run after adding new sequences in FPP.</p>
                         <div class="flex flex-wrap gap-3">
                             <div class="flex flex-col gap-1">
                                 <button type="button" @click="syncPlaylists" class="rounded-lg px-4 py-2.5 text-sm font-medium text-white transition" style="background: linear-gradient(135deg, #312e81, #4338ca); border: 1px solid rgba(99, 102, 241, 0.4)">
@@ -897,7 +971,7 @@
                 </section>
 
                 <!-- Site -->
-                <section class="rounded-xl border border-gray-800 bg-gray-900 p-5">
+                <section v-show="cfgTab === 'site'" class="rounded-xl border border-gray-800 bg-gray-900 p-5">
                     <h3 class="mb-4 text-sm font-semibold tracking-wide text-gray-300 uppercase">Site</h3>
                     <div class="grid gap-4 md:grid-cols-2">
                         <label class="block">
@@ -912,7 +986,7 @@
                 </section>
 
                 <!-- Weekly Schedule -->
-                <section class="rounded-xl border border-gray-800 bg-gray-900 p-5">
+                <section v-show="cfgTab === 'show'" class="rounded-xl border border-gray-800 bg-gray-900 p-5">
                     <div class="mb-1 flex items-start justify-between gap-4">
                         <div>
                             <h3 class="text-sm font-semibold tracking-wide text-gray-300 uppercase">Weekly Show Schedule</h3>
@@ -939,7 +1013,7 @@
                         </label>
                     </div>
                     <div class="space-y-2">
-                        <div v-for="entry in scheduleEntries" :key="entry.day" class="flex items-center gap-3 overflow-auto rounded-lg border px-3 py-2.5" :class="entry.enabled ? 'border-gray-700 bg-gray-800' : 'border-gray-800 bg-gray-900'">
+                        <div v-for="entry in scheduleEntries" :key="entry.day" class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border px-3 py-2.5" :class="entry.enabled ? 'border-gray-700 bg-gray-800' : 'border-gray-800 bg-gray-900'">
                             <!-- Enable toggle -->
                             <input type="checkbox" :checked="entry.enabled" @change="e => updateScheduleEntry(entry.day, 'enabled', e.target.checked)" class="shrink-0 accent-green-500" />
                             <!-- Day name -->
@@ -947,7 +1021,7 @@
                                 {{ entry.day }}
                             </span>
                             <!-- Times -->
-                            <div class="flex flex-1 items-center gap-2" :class="entry.enabled ? '' : 'pointer-events-none opacity-40'">
+                            <div class="order-last flex w-full items-center gap-2 sm:order-none sm:w-auto sm:flex-1" :class="entry.enabled ? '' : 'pointer-events-none opacity-40'">
                                 <template v-for="(field, idx) in ['start', 'end']" :key="field">
                                     <span v-if="idx === 1" class="shrink-0 text-xs text-gray-500">to</span>
                                     <button v-if="isSunLabel(entry[field])" type="button" @click="updateScheduleEntry(entry.day, field, field === 'start' ? '17:00' : '22:00')" title="Click to use a fixed clock time instead" class="input flex-1 py-1.5 text-left text-xs text-yellow-300">
@@ -956,14 +1030,23 @@
                                     <input v-else type="time" :value="entry[field]" @change="e => updateScheduleEntry(entry.day, field, e.target.value)" class="input flex-1 py-1.5 text-xs" />
                                 </template>
                             </div>
-                            <span v-if="!entry.enabled" class="shrink-0 text-xs text-gray-600">Closed</span>
+                            <span v-if="!entry.enabled" class="ml-auto shrink-0 text-xs text-gray-600 sm:ml-0">Closed</span>
                         </div>
                     </div>
                 </section>
 
                 <!-- Pricing -->
-                <section class="rounded-xl border border-gray-800 bg-gray-900 p-5">
-                    <h3 class="mb-4 text-sm font-semibold tracking-wide text-gray-300 uppercase">Pricing</h3>
+                <section v-show="cfgTab === 'show'" class="rounded-xl border border-red-500/30 bg-gray-900 p-5">
+                    <h3 class="mb-1 text-sm font-semibold tracking-wide text-gray-300 uppercase">New season</h3>
+                    <p class="mb-4 text-xs text-gray-400">Start with a clean slate. Clears visitor and Listen-live stats, cheers, all donations and the supporters list (the donation goal restarts at $0), song ratings and played history. Songs, playlists, settings and friends &amp; family passes are kept. This cannot be undone.</p>
+                    <div class="flex items-center gap-3">
+                        <button type="button" @click="resetStats" class="rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-300 hover:bg-red-500/20">Clear for new season</button>
+                        <span v-if="resetMsg" class="text-xs text-blue-400">{{ resetMsg }}</span>
+                    </div>
+                </section>
+
+                <section v-show="cfgTab === 'requests'" class="rounded-xl border border-gray-800 bg-gray-900 p-5">
+                    <h3 class="mb-4 text-sm font-semibold tracking-wide text-gray-300 uppercase">Pricing &amp; donation goal</h3>
                     <div class="grid gap-4 md:grid-cols-2">
                         <label class="block">
                             <span class="text-xs text-gray-400">Song Request Cost ($)</span>
@@ -1002,7 +1085,7 @@
                 </section>
 
                 <!-- Rate Limits -->
-                <section class="rounded-xl border border-gray-800 bg-gray-900 p-5">
+                <section v-show="cfgTab === 'requests'" class="rounded-xl border border-gray-800 bg-gray-900 p-5">
                     <h3 class="mb-4 text-sm font-semibold tracking-wide text-gray-300 uppercase">Rate Limits</h3>
                     <div class="grid gap-4 md:grid-cols-2">
                         <label class="block">
@@ -1017,7 +1100,7 @@
                 </section>
 
                 <!-- Friends & family -->
-                <section class="rounded-xl border border-gray-800 bg-gray-900 p-5">
+                <section v-show="cfgTab === 'audience'" class="rounded-xl border border-gray-800 bg-gray-900 p-5">
                     <h3 class="mb-1 text-sm font-semibold tracking-wide text-gray-300 uppercase">Friends &amp; family</h3>
                     <p class="mb-4 text-xs text-gray-500">
                         Give people a personal code. They sign in on the site and can see the show and request songs for <strong>free, at any time</strong>, even before the season opens or outside show hours (those songs play on your lights). Delete a pass to cut that person off.
@@ -1053,7 +1136,7 @@
                 </section>
 
                 <!-- Listen live -->
-                <section class="rounded-xl border border-gray-800 bg-gray-900 p-5">
+                <section v-show="cfgTab === 'audience'" class="rounded-xl border border-gray-800 bg-gray-900 p-5">
                     <div class="mb-1 flex items-center justify-between gap-3">
                         <h3 class="text-sm font-semibold tracking-wide text-gray-300 uppercase">Listen live (phone audio)</h3>
                         <span v-if="listenStatus" class="rounded-full px-2.5 py-0.5 text-xs font-semibold" :class="listenStatus.live ? 'bg-green-500/15 text-green-300' : 'bg-gray-700 text-gray-400'">
@@ -1078,7 +1161,7 @@
                 </section>
 
                 <!-- MQTT -->
-                <section class="rounded-xl border border-gray-800 bg-gray-900 p-5">
+                <section v-show="cfgTab === 'site'" class="rounded-xl border border-gray-800 bg-gray-900 p-5">
                     <h3 class="mb-4 text-sm font-semibold tracking-wide text-gray-300 uppercase">MQTT</h3>
                     <p class="mb-4 text-xs leading-relaxed text-gray-400">
                         Optional. Publishes events (song requested, donation, now playing) to an MQTT broker so other tools, such as Home Assistant, phone alerts or a roadside sign, can react to them. The show works the same with this off.
@@ -1117,7 +1200,7 @@
                 </section>
 
                 <!-- Social Media -->
-                <section class="md:mb-16 rounded-xl border border-gray-800 bg-gray-900 p-5">
+                <section v-show="cfgTab === 'site'" class="rounded-xl border border-gray-800 bg-gray-900 p-5">
                     <h3 class="mb-4 text-sm font-semibold tracking-wide text-gray-300 uppercase">Social Media</h3>
                     <div v-for="(link, i) in socialLinks" :key="i" class="mb-2 flex gap-2">
                         <input v-model="link.platform" class="input flex-1" placeholder="Platform (e.g. facebook)" @input="socialLinks = [...socialLinks]" />
@@ -1129,24 +1212,44 @@
                     <button type="button" @click="addSocialLink" class="mt-2 text-sm text-green-400 hover:text-green-300">+ Add link</button>
                 </section>
 
-                <div class="md:fixed bottom-5  flex items-center justify-center gap-4 border-t border-gray-800 bg-gray-900/95 py-3 right-5 md:justify-end px-8 rounded-xl">
-                    <div class="flex items-center gap-2">
-                        <button type="submit" :disabled="saving" class="rounded-xl bg-green-600 px-6 py-2.5 font-semibold text-white hover:bg-green-500 disabled:opacity-50">
-                            {{ saving ? 'Saving...' : 'Save Configuration' }}
-                        </button>
-                        <span v-if="saveMsg" class="text-sm text-green-400">{{ saveMsg }}</span>
-                    </div>
+                </div>
 
-                    <button type="button" @click="goHome" class="text-sm text-gray-400 hover:text-gray-300">Cancel</button>
+                <!-- Unsaved-changes bar -->
+                <div v-if="dirty || saveMsg" class="fixed inset-x-0 bottom-0 z-30 border-t border-gray-800 bg-gray-900/95 px-4 py-3 backdrop-blur">
+                    <div class="mx-auto flex max-w-6xl items-center justify-between gap-4">
+                        <p class="text-sm" :class="dirty ? 'text-yellow-300' : 'text-green-400'">{{ dirty ? 'You have unsaved changes' : saveMsg }}</p>
+                        <div class="flex items-center gap-3">
+                            <button v-if="dirty" type="button" @click="discardChanges" class="text-sm text-gray-400 hover:text-gray-200">Discard</button>
+                            <button type="submit" :disabled="saving || !dirty" class="rounded-xl bg-green-600 px-6 py-2 font-semibold text-white hover:bg-green-500 disabled:opacity-50">
+                                {{ saving ? 'Saving...' : 'Save changes' }}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </form>
         </div>
 
         <!-- Queue Tab -->
         <div v-if="activeTab === 'queue'">
+            <!-- Live queue -->
+            <div class="rounded-xl border border-gray-800 bg-gray-900 p-5">
+                <h3 class="mb-3 text-sm font-semibold tracking-wide text-gray-300 uppercase">Live Queue</h3>
+                <div v-if="showStore.queue.length === 0" class="text-sm text-gray-500">Queue is empty.</div>
+                <div v-else class="space-y-2">
+                    <div v-for="item in showStore.queue" :key="item.id" class="flex items-center gap-3 rounded-lg bg-gray-950 px-4 py-2.5">
+                        <span class="w-6 text-sm text-gray-600">{{ item.position }}</span>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-sm font-medium text-white">{{ item.title }}</p>
+                            <p class="text-xs text-gray-500">{{ item.artist }} · {{ item.status }}</p>
+                        </div>
+                        <button @click="skipItem(item.id)" class="rounded-lg bg-red-500/10 px-3 py-1 text-xs text-red-400 hover:text-red-300">Skip</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Diagnostics -->
-            <div class="mb-6 rounded-xl border border-gray-800 bg-gray-900 p-5" v-if="admin.diagnostics">
-                <h3 class="mb-3 text-sm font-semibold tracking-wide text-gray-300 uppercase">State Machine</h3>
+            <div class="mt-6 rounded-xl border border-gray-800 bg-gray-900 p-5" v-if="admin.diagnostics">
+                <h3 class="mb-3 text-sm font-semibold tracking-wide text-gray-300 uppercase">Player diagnostics</h3>
                 <div class="mb-4 flex gap-4">
                     <div>
                         <span class="text-xs text-gray-500">State</span>
@@ -1174,22 +1277,6 @@
                             <span class="truncate">{{ cmd.url }}</span>
                         </div>
                         <p v-if="!admin.diagnostics.commandLog.length" class="text-gray-600">No commands yet.</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Live queue -->
-            <div class="rounded-xl border border-gray-800 bg-gray-900 p-5">
-                <h3 class="mb-3 text-sm font-semibold tracking-wide text-gray-300 uppercase">Live Queue</h3>
-                <div v-if="showStore.queue.length === 0" class="text-sm text-gray-500">Queue is empty.</div>
-                <div v-else class="space-y-2">
-                    <div v-for="item in showStore.queue" :key="item.id" class="flex items-center gap-3 rounded-lg bg-gray-950 px-4 py-2.5">
-                        <span class="w-6 text-sm text-gray-600">{{ item.position }}</span>
-                        <div class="min-w-0 flex-1">
-                            <p class="text-sm font-medium text-white">{{ item.title }}</p>
-                            <p class="text-xs text-gray-500">{{ item.artist }} · {{ item.status }}</p>
-                        </div>
-                        <button @click="skipItem(item.id)" class="rounded-lg bg-red-500/10 px-3 py-1 text-xs text-red-400 hover:text-red-300">Skip</button>
                     </div>
                 </div>
             </div>

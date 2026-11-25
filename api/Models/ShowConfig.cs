@@ -35,6 +35,11 @@ public class ShowConfig {
     public bool InterruptForUserSongs { get; set; } = true;
     public int FppPollingIntervalSeconds { get; set; } = 5;
 
+    /// <summary>FPP sequence played once when the show opens (season/hours begin or override turned on). Empty = none.</summary>
+    public string OpenSequence { get; set; } = string.Empty;
+    /// <summary>FPP sequence played once when the show closes. Empty = none.</summary>
+    public string CloseSequence { get; set; } = string.Empty;
+
     // Queue / Rate limiting
     public int MaxSongsPerWindow { get; set; } = 3;
     public int RateLimitWindowMinutes { get; set; } = 60;

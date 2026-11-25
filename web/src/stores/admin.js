@@ -109,6 +109,16 @@ export const useAdminStore = defineStore('admin', () => {
     const playlists = ref([]);
     const ratings = ref([]);
 
+    const fppSequences = ref([]);
+    async function fetchFppSequences() {
+        try {
+            const { data } = await axios.get('/api/admin/fpp/sequences', { headers: authHeaders() });
+            fppSequences.value = data;
+        } catch {
+            fppSequences.value = [];
+        }
+    }
+
     async function fetchPlaylists() {
         const { data } = await axios.get('/api/admin/playlists', { headers: authHeaders() });
         playlists.value = data;
@@ -179,6 +189,8 @@ export const useAdminStore = defineStore('admin', () => {
         syncSongs,
         syncPlaylists,
         fetchPlaylists,
+        fppSequences,
+        fetchFppSequences,
         updatePlaylist,
         skipQueueItem,
         fetchRatings,

@@ -147,6 +147,10 @@ namespace XlightsQueue.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("CloseSequence")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("DefaultPlaylistName")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -191,6 +195,10 @@ namespace XlightsQueue.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("MqttUsername")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OpenSequence")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
@@ -253,6 +261,7 @@ namespace XlightsQueue.Migrations
                             Id = 1,
                             AutoPlayDefault = true,
                             BumpCost = 1.00m,
+                            CloseSequence = "",
                             DefaultPlaylistName = "",
                             DefaultTheme = "dark",
                             DonateCost = 5.00m,
@@ -267,6 +276,7 @@ namespace XlightsQueue.Migrations
                             MqttPassword = "",
                             MqttTopicPrefix = "xlights",
                             MqttUsername = "",
+                            OpenSequence = "",
                             RateLimitWindowMinutes = 60,
                             ShowMode = "auto",
                             ShowScheduleJson = "[]",

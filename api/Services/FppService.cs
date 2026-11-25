@@ -23,6 +23,9 @@ public class FppCurrentPlaylist {
     public string playlist { get; set; } = string.Empty;
     public string type { get; set; } = string.Empty;
     public string description { get; set; } = string.Empty;
+    /// <summary>1-based position of the running item and the number of items (FPP sends them as strings).</summary>
+    public string index { get; set; } = "0";
+    public string count { get; set; } = "0";
 }
 
 public class FppStatus {
@@ -162,7 +165,7 @@ public class FppService(IDbContextFactory<AppDbContext> dbFactory, ILogger<FppSe
 
     // Creates a temporary single-song playlist and starts it.
     // FPP's /api/sequence/{name}/start is for overlay sequences only, main playback requires a playlist.
-    public async Task<bool> StartSequenceAsync(string sequenceName, string mediaName = "") {
+    public async Task<bool> StartSequenceAsync(string sequenceName, string mediaName = "", IReadOnlyList<JsonElement>? leadIn = null) {
         const string TempPlaylist = "xlq_current";
 
         // Ensure .fseq extension, /api/sequence list omits it but FPP playlist entries require it
@@ -182,7 +185,7 @@ public class FppService(IDbContextFactory<AppDbContext> dbFactory, ILogger<FppSe
             repeat = 0,
             loopCount = 0,
             random = 0,
-            leadIn = Array.Empty<object>(),
+            leadIn = (IEnumerable<object>?)leadIn?.Cast<object>() ?? Array.Empty<object>(),
             mainPlaylist = new[] { entry },
             leadOut = Array.Empty<object>()
         });
@@ -193,6 +196,43 @@ public class FppService(IDbContextFactory<AppDbContext> dbFactory, ILogger<FppSe
             return false;
         }
 
+        return await PostThenGetAsync($"/api/playlist/{TempPlaylist}/start");
+    }
+
+    /// <summary>
+    /// The lead-in and lead-out entries of an FPP playlist (the "turn the moving heads on / off" part).
+    /// Returned as FPP wrote them so any entry type (command, pause, script...) works. Empty if FPP
+    /// doesn't answer, so a hiccup never stops the show from playing.
+    /// </summary>
+    public async Task<(List<JsonElement> LeadIn, List<JsonElement> LeadOut)> GetLeadEntriesAsync(string name) {
+        List<JsonElement> leadIn = [], leadOut = [];
+        var response = await CallAsync($"/api/playlist/{Uri.EscapeDataString(name)}");
+        if (response?.IsSuccessStatusCode != true) return (leadIn, leadOut);
+        try {
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            List<JsonElement> Read(params string[] keys) {
+                foreach (var k in keys)
+                    if (doc.RootElement.TryGetProperty(k, out var a) && a.ValueKind == JsonValueKind.Array)
+                        return a.EnumerateArray().Select(e => e.Clone()).ToList();
+                return [];
+            }
+            leadIn = Read("leadIn", "lead_in");
+            leadOut = Read("leadOut", "lead_out");
+        } catch (Exception ex) {
+            logger.LogWarning("Failed to read lead-in/out for FPP playlist '{Name}': {Message}", name, ex.Message);
+        }
+        return (leadIn, leadOut);
+    }
+
+    /// <summary>Plays a list of FPP playlist entries once (used for a playlist's lead-out).</summary>
+    public async Task<bool> StartEntriesAsync(IReadOnlyList<JsonElement> entries) {
+        const string TempPlaylist = "xlq_current";
+        var payload = JsonSerializer.Serialize(new {
+            name = TempPlaylist, repeat = 0, loopCount = 0, random = 0,
+            leadIn = Array.Empty<object>(), mainPlaylist = entries, leadOut = Array.Empty<object>()
+        });
+        var created = await PostJsonAsync($"/api/playlist/{TempPlaylist}", payload);
+        if (created?.IsSuccessStatusCode != true) return false;
         return await PostThenGetAsync($"/api/playlist/{TempPlaylist}/start");
     }
 
@@ -208,6 +248,26 @@ public class FppService(IDbContextFactory<AppDbContext> dbFactory, ILogger<FppSe
     // POST (or legacy GET) /api/playlist/{name}/start
     public async Task<bool> StartPlaylistAsync(string name) {
         return await PostThenGetAsync($"/api/playlist/{Uri.EscapeDataString(name)}/start");
+    }
+
+    /// <summary>
+    /// Starts a playlist at a given item (1-based), keeping the playlist's own repeat setting.
+    /// Falls back to a normal start from the top if FPP refuses.
+    /// </summary>
+    public async Task<bool> StartPlaylistAtItemAsync(string name, int item) {
+        var repeat = false;
+        var info = await CallAsync($"/api/playlist/{Uri.EscapeDataString(name)}");
+        if (info?.IsSuccessStatusCode == true) {
+            try {
+                using var doc = JsonDocument.Parse(await info.Content.ReadAsStringAsync());
+                if (doc.RootElement.TryGetProperty("repeat", out var r))
+                    repeat = r.ValueKind == JsonValueKind.True || (r.ValueKind == JsonValueKind.Number && r.GetInt32() != 0)
+                        || (r.ValueKind == JsonValueKind.String && r.GetString() is "1" or "true");
+            } catch { /* keep default */ }
+        }
+        var res = await PostCommandAsync("Start Playlist At Item", [name, item.ToString(), repeat ? "true" : "false", "false"]);
+        if (res?.IsSuccessStatusCode == true) return true;
+        return await StartPlaylistAsync(name);
     }
 
     // POST (or legacy GET) /api/playlists/stop

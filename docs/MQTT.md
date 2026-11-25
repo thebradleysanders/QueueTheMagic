@@ -17,7 +17,7 @@ If none of that sounds useful, leave MQTT turned off.
 ## Setup
 
 1. You need a broker on your network. [Mosquitto](https://mosquitto.org/) is the usual choice (Home Assistant has an add-on for it).
-2. In **Admin → Config → MQTT**:
+2. In **Admin → Config → Site & integrations → MQTT**:
    - tick **Enable MQTT**
    - enter the broker **host** and **port** (default `1883`)
    - enter a username and password if your broker needs them
@@ -72,7 +72,7 @@ Notes:
 
 Each time someone opens the site on a device it counts as one visit. A device is one browser, identified by a random anonymous ID, with no IP address or personal data stored. If the same device opens the site again within 30 minutes (a refresh, switching apps and back), that is the same visit, so stats and MQTT aren't flooded. `newDevice` is `true` the first time that device has ever been seen. Admin pages are never counted.
 
-The same numbers appear in **Admin → Reports** (visits today, visits and unique devices over 30 days, and a daily chart).
+The same numbers appear in **Admin → Reports → Audience** (visits today, visits and unique devices over 30 days, and a daily chart).
 
 ## Examples
 

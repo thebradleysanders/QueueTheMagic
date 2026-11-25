@@ -18,35 +18,18 @@ I have solved this with a simple self-hosted website users can access from socia
 
 ## Screenshots
 
-![Overview](docs/screenshots/overview.png)
-
-<table>
-  <tr>
-    <td align="center"><img src="docs/screenshots/home-goal.png" width="230"><br><sub>Season donation goal, queue and supporters</sub></td>
-    <td align="center"><img src="docs/screenshots/song-request.png" width="230"><br><sub>Requesting a song</sub></td>
-    <td align="center"><img src="docs/screenshots/info.png" width="230"><br><sub>Show info and schedule</sub></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="docs/screenshots/closed.png" width="230"><br><sub>Before the season opens</sub></td>
-    <td align="center"><img src="docs/screenshots/guest-signin.png" width="230"><br><sub>Friends &amp; family sign in</sub></td>
-    <td align="center"><img src="docs/screenshots/guest-preview.png" width="230"><br><sub>Friends &amp; family preview</sub></td>
-  </tr>
-</table>
+![The visitor site on a phone](docs/screenshots/overview.png)
 
 **Admin dashboard**
 
-![Admin reports](docs/screenshots/admin-reports.png)
+![Reports: visits and Listen live statistics](docs/screenshots/admin-reports.png)
+<sub>Reports, split into Money, Audience and Songs</sub>
 
-<table>
-  <tr>
-    <td><img src="docs/screenshots/admin-show-status.png"><br><sub>Season dates and the manual on/off override</sub></td>
-    <td><img src="docs/screenshots/admin-guests.png"><br><sub>Friends &amp; family passes</sub></td>
-  </tr>
-  <tr>
-    <td><img src="docs/screenshots/admin-playlists.png"><br><sub>Reorder playlists and songs</sub></td>
-    <td><img src="docs/screenshots/admin-listen.png"><br><sub>Listen live settings</sub></td>
-  </tr>
-</table>
+![Config: season dates and weekly schedule](docs/screenshots/admin-config.png)
+<sub>Config, grouped into five sections. The Automatic / Force on / Force off switch is always at the top</sub>
+
+![Playlists: reorder playlists and songs](docs/screenshots/admin-playlists.png)
+<sub>Reorder playlists and songs with the arrows or by dragging</sub>
 
 ## Features
 
@@ -126,10 +109,10 @@ docker compose up -d
    - Verify the FPP Address matches your player
    - Click **Import Playlists** and **Import Sequences** to sync your FPP library
    - Select your **Default Playlist** from the dropdown
-4. In **Config → Show status**, set the **season start and end dates**. Leave the switch on **Automatic**
+4. In **Config → Show & schedule**, set the **season start and end dates**. Leave the switch on **Automatic**
 5. Set your **weekly show schedule** (or click **Import from FPP**). If it uses Dusk or Sunset times, enter your latitude and longitude
 6. Set your site name, FM station, pricing and (optionally) a **season donation goal**
-7. Click **Save Configuration**
+7. Click **Save changes** (it appears at the bottom once you edit something)
 8. Optional: turn on [Listen live](docs/LISTEN.md), [MQTT](docs/MQTT.md), and create [friends & family passes](#friends--family)
 
 ### Useful commands
@@ -178,7 +161,7 @@ All configuration is passed via environment variables, no config files to edit.
 
 The public site and the queue follow three layers, from highest priority:
 
-1. **Manual override** (Admin → Config → Show status):
+1. **Manual override** (the Automatic / Force on / Force off switch at the top of every admin page):
    - **Automatic**: follow the season dates and weekly hours.
    - **Force on**: the show runs now, ignoring dates and hours.
    - **Force off**: the show is closed.
@@ -190,7 +173,7 @@ The default playlist only starts when the season is open **and** inside the week
 
 ### Friends & family
 
-Create a pass per person in **Admin → Config → Friends & family**. Each pass has a short code (and a "Copy link" link like `https://your-site/?guest=ABC123` that signs the person in automatically). Guests can see the whole site before the season opens and request songs **for free, at any time**, and those songs play on your lights even outside the public hours. Delete a pass to cut that person off immediately. Guest requests create no payment records.
+Create a pass per person in **Admin → Config → Audience → Friends & family**. Each pass has a short code (and a "Copy link" link like `https://your-site/?guest=ABC123` that signs the person in automatically). Guests can see the whole site before the season opens and request songs **for free, at any time**, and those songs play on your lights even outside the public hours. Delete a pass to cut that person off immediately. Guest requests create no payment records.
 
 ---
 
@@ -272,6 +255,20 @@ QueueTheMagic communicates directly with your Falcon Player over HTTP. Make sure
 The app polls FPP every 5 seconds (configurable in admin). When a user song is queued, the poller wakes immediately and starts playback. When the song ends, the default playlist resumes automatically. Playback commands use `POST` first (required from FPP 10.3 onward, where state-changing `GET` requests are deprecated) and fall back to `GET` for older versions.
 
 For **Listen live**, enable **Opus RTP Audio Streaming** in FPP's PipeWire audio network stream settings and send it to the QTM server on UDP 5004. See [docs/LISTEN.md](docs/LISTEN.md).
+
+### Lead-in and lead-out (moving heads, warm-up, power)
+
+Each requested song is played on its own, so FPP would run a playlist's **lead-in** and **lead-out** around every song. Instead QueueTheMagic runs them once per show, using the lead-in and lead-out you set on that playlist in FPP (turn the heads on, wait for warm-up, turn them off):
+
+- **Show start:** the first requested song, or the first song after switching to a different playlist, plays with that playlist's lead-in in front of it.
+- **Playlist change:** the old playlist's lead-out plays, then the new playlist's lead-in.
+- **Show end:** once the queue has been empty for 60 seconds (so a request right after a song doesn't turn the heads off and on), or when the show closes, the playlist's lead-out plays once.
+- The default playlist runs its own lead-in and lead-out through FPP as usual.
+
+Nothing to configure in QueueTheMagic. Edit the lead-in and lead-out on each playlist in FPP.
+
+You can also set a **show open sequence** and **show close sequence** in **Admin → Config → Falcon Player**. They play once when the show opens (season start, show hours begin, or the override is turned on) and once when it closes: the open sequence before any playlist lead-in, the close sequence after the lead-out. They are not replayed if the app restarts mid-show.
+
 
 ---
 

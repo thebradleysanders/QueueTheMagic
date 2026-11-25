@@ -5,7 +5,40 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
+  github-release:
+    name: GitHub Release notes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Publish release with the changelog section for this tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          VERSION="${TAG#v}"
+          # Pull the "## [x.y.z]" section for this version out of CHANGELOG.md
+          awk -v v="$VERSION" '
+            index($0, "## [" v "]") == 1 { on=1; next }
+            on && index($0, "## [") == 1 { exit }
+            on { print }
+          ' CHANGELOG.md | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}' > notes.md
+
+          if [ -s notes.md ]; then
+            printf '\n' >> notes.md
+            echo "Docker image:\`docker pull ${{ secrets.DOCKERHUB_USERNAME }}/queue-the-magic:${TAG}\`" >> notes.md
+            gh release create "$TAG" --title "$TAG" --notes-file notes.md --verify-tag \
+              || gh release edit "$TAG" --title "$TAG" --notes-file notes.md
+          else
+            echo "No CHANGELOG.md section for $VERSION, using generated notes"
+            gh release create "$TAG" --title "$TAG" --generate-notes --verify-tag \
+              || echo "Release already exists"
+          fi
+
   docker:
     name: Build & Push to DockerHub
     runs-on: ubuntu-latest
