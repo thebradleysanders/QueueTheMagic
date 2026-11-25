@@ -30,14 +30,31 @@ jobs:
 
           if [ -s notes.md ]; then
             printf '\n' >> notes.md
-            echo "Docker image:\`docker pull ${{ secrets.DOCKERHUB_USERNAME }}/queue-the-magic:${TAG}\`" >> notes.md
-            gh release create "$TAG" --title "$TAG" --notes-file notes.md --verify-tag \
-              || gh release edit "$TAG" --title "$TAG" --notes-file notes.md
+            echo "Docker image: \`docker pull ${{ secrets.DOCKERHUB_USERNAME }}/queue-the-magic:${TAG}\`" >> notes.md
+            NOTES_ARGS=(--notes-file notes.md)
           else
             echo "No CHANGELOG.md section for $VERSION, using generated notes"
-            gh release create "$TAG" --title "$TAG" --generate-notes --verify-tag \
-              || echo "Release already exists"
+            NOTES_ARGS=(--generate-notes)
           fi
+
+          # GitHub's API occasionally answers 5xx; retry, and if a failed attempt actually created
+          # the release, update it instead of failing.
+          for attempt in 1 2 3 4; do
+            if gh release view "$TAG" > /dev/null 2>&1; then
+              # exists (a failed attempt created it, or a re-run): refresh the notes when we have them
+              if [ -s notes.md ]; then
+                gh release edit "$TAG" --title "$TAG" --notes-file notes.md && exit 0
+              else
+                exit 0
+              fi
+            else
+              gh release create "$TAG" --title "$TAG" "${NOTES_ARGS[@]}" --verify-tag && exit 0
+            fi
+            echo "Attempt $attempt failed, retrying in $((attempt * 15))s"
+            sleep $((attempt * 15))
+          done
+          echo "Could not publish the GitHub release after several attempts"
+          exit 1
 
   docker:
     name: Build & Push to DockerHub
