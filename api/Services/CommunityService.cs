@@ -31,7 +31,7 @@ public class CommunityService(
     }
 
     public void ResetCheers() {
-        lock (_gate) { _cheersToday = 0; }
+        lock (_gate) { _cheersToday = 0; _feed.Clear(); }
         _lastCheer.Clear();
     }
 

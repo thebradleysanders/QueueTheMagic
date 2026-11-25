@@ -68,7 +68,7 @@ I have solved this with a simple self-hosted website users can access from socia
 - **Friends & family passes**: give people a personal code to sign in, see the show before it opens and pick songs for free, any time
 - Reorder playlists and songs, hide playlists, rename songs
 - Automatic refunds if a paid request can't be fulfilled
-- Admin dashboard: reports (donations, songs, visitors, listen stats, ratings), live queue, diagnostics, supporters moderation, **Reset stats**
+- Admin dashboard: reports (donations, songs, visitors, listen stats, ratings), live queue, diagnostics, supporters moderation, **Clear for new season** (wipes stats, donations, supporters and ratings)
 - FPP integration: controls playback directly, imports sequences, playlists and the schedule
 - MQTT events and remote control for Home Assistant, signs, props and more ([guide](docs/MQTT.md))
 

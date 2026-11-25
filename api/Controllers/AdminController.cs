@@ -248,9 +248,10 @@ public class AdminController(
     }
 
     /// <summary>
-    /// Clears the visitor and Listen-live statistics and the cheer counter, for a fresh start
-    /// (for example after testing, or at the start of the season). Payments, donations and the
-    /// supporters list are NOT touched.
+    /// Clean slate for a new season: clears visitor and Listen-live stats, the cheer counter and live
+    /// activity feed, the donation/supporters history (and so the donation goal and revenue reports),
+    /// song ratings and the played-song history. Songs, playlists, settings and friends &amp; family
+    /// passes are kept, and so is anything still waiting in the queue or playing (with its payment).
     /// </summary>
     [Authorize]
     [HttpPost("stats/reset")]
@@ -258,9 +259,15 @@ public class AdminController(
         await using var db = await dbFactory.CreateDbContextAsync();
         var visits = await db.Visits.ExecuteDeleteAsync();
         var listens = await db.ListenSessions.ExecuteDeleteAsync();
+        var ratings = await db.SongRatings.ExecuteDeleteAsync();
+        var history = await db.QueueItems
+            .Where(q => q.Status == QueueItemStatus.Played || q.Status == QueueItemStatus.Skipped).ExecuteDeleteAsync();
+        var inUse = db.QueueItems.Where(q => q.DonationId != null).Select(q => q.DonationId!.Value);
+        var donations = await db.Donations.Where(d => !inUse.Contains(d.Id)).ExecuteDeleteAsync();
         community.ResetCheers();
         await community.BroadcastCommunityAsync();
-        return Ok(new { visits, listens });
+        await hub.Clients.All.SendAsync("SupportersChanged");
+        return Ok(new { visits, listens, ratings, donations, history });
     }
 
     [Authorize]

@@ -31,6 +31,43 @@ export const useListenStore = defineStore('listen', () => {
     let target = TARGET;
     let stalls = 0;
     let gain = null;
+    let keepAlive = null;
+
+    // iPhones mute Web Audio while the ringer switch is on silent (headphones bypass it, which is
+    // why it "only worked on AirPods"). A playing <audio> element makes iOS treat the page as media
+    // playback, which ignores the switch. We play a silent looping clip for that, and where
+    // supported also declare the audio session as "playback".
+    function unlockMediaAudio() {
+        try {
+            if (navigator.audioSession) navigator.audioSession.type = 'playback';
+        } catch {
+            /* not supported */
+        }
+        try {
+            if (!keepAlive) {
+                const rate = 8000;
+                const wav = new DataView(new ArrayBuffer(44 + rate * 2));
+                const w = (o, t) => [...t].forEach((c, i) => wav.setUint8(o + i, c.charCodeAt(0)));
+                w(0, 'RIFF');
+                wav.setUint32(4, 36 + rate * 2, true);
+                w(8, 'WAVEfmt ');
+                wav.setUint32(16, 16, true);
+                wav.setUint16(20, 1, true);
+                wav.setUint16(22, 1, true);
+                wav.setUint32(24, rate, true);
+                wav.setUint32(28, rate * 2, true);
+                wav.setUint16(32, 2, true);
+                wav.setUint16(34, 16, true);
+                w(36, 'data');
+                wav.setUint32(40, rate * 2, true);
+                keepAlive = new Audio(URL.createObjectURL(new Blob([wav], { type: 'audio/wav' })));
+                keepAlive.loop = true;
+            }
+            keepAlive.play().catch(() => {});
+        } catch {
+            /* best effort */
+        }
+    }
 
     async function refreshStatus() {
         try {
@@ -81,6 +118,7 @@ export const useListenStore = defineStore('listen', () => {
             ctx = new (window.AudioContext || window.webkitAudioContext)();
         }
         ctx.resume();
+        unlockMediaAudio();
         gain = ctx.createGain();
         gain.connect(ctx.destination);
         playAt = 0;
@@ -131,6 +169,7 @@ export const useListenStore = defineStore('listen', () => {
         decoder = null;
         ctx?.close().catch(() => {});
         ctx = null;
+        keepAlive?.pause();
         bufferMs.value = 0;
     }
 

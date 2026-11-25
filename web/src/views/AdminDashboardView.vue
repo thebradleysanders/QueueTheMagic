@@ -333,7 +333,7 @@
         if (!window.confirm('Reset all visitor and Listen-live statistics and the cheer counter?\n\nPayments, donations and the supporters list are NOT affected. This cannot be undone.')) return;
         try {
             const r = await admin.resetStats();
-            resetMsg.value = `Cleared ${r.visits} visits and ${r.listens} listen sessions.`;
+            resetMsg.value = `Cleared ${r.visits} visits, ${r.listens} listen sessions, ${r.donations} donations and ${r.ratings} ratings.`;
         } catch {
             resetMsg.value = 'Reset failed.';
         }
@@ -554,12 +554,12 @@
             <!-- Reset -->
             <div class="mb-8 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-800 bg-gray-900 p-4">
                 <div>
-                    <p class="text-sm font-medium text-gray-200">Reset statistics</p>
-                    <p class="text-xs text-gray-500">Clears visitor stats, Listen-live stats and the cheer counter. Payments, donations and the supporters list are kept.</p>
+                    <p class="text-sm font-medium text-gray-200">New season / reset</p>
+                    <p class="text-xs text-gray-500">Clears visitor and Listen-live stats, cheers, all donations and the supporters list (the goal restarts at $0), song ratings and played history. Songs, playlists, settings and passes are kept.</p>
                 </div>
                 <div class="flex items-center gap-3">
                     <span v-if="resetMsg" class="text-xs text-blue-400">{{ resetMsg }}</span>
-                    <button @click="resetStats" class="rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-300 hover:bg-red-500/20">Reset stats</button>
+                    <button @click="resetStats" class="rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-300 hover:bg-red-500/20">Clear for new season</button>
                 </div>
             </div>
 
